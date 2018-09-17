@@ -1,0 +1,17 @@
+[package]
+name = "blot"
+version = "0.1.0"
+authors = ["Arnau Siches <asiches@gmail.com>"]
+
+[[bin]]
+name = "play"
+test = false
+doc = false
+
+[lib]
+name = "blot"
+path = "src/lib.rs"
+
+[dependencies]
+sha2 = "0.7"
+digest = "0.7"
