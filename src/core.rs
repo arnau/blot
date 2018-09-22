@@ -5,26 +5,25 @@
 // those terms.
 
 use crypto_sha2::Digest;
-use crypto_sha2::Sha256;
-use digest::generic_array::typenum::U32;
-use digest::generic_array::{ArrayLength, GenericArray};
+use crypto_sha2::{Sha256, Sha512};
+use digest::generic_array::GenericArray;
 use digest::FixedOutput;
+use multihash;
 use std::fmt;
 use tag::Tag;
 
 pub type Output<T> = GenericArray<u8, T>;
 
-pub trait Multihash {
-    type Hasher: Digest;
-    fn digest(&self) -> Option<Output<<Self::Hasher as FixedOutput>::OutputSize>>;
+#[derive(Clone)]
+pub struct Hash<T: Digest> {
+    tag: multihash::Tag,
+    digest: Option<Output<<T as FixedOutput>::OutputSize>>,
 }
 
-#[derive(Clone, Debug)]
-pub struct Hash<T: Digest> {
-    name: String,
-    function_type: u8,
-    length: u8,
-    digest: Option<Output<<T as FixedOutput>::OutputSize>>,
+impl<Hasher: Digest> Hash<Hasher> {
+    pub fn digest(&self) -> &Option<Output<<Hasher as FixedOutput>::OutputSize>> {
+        &self.digest
+    }
 }
 
 impl<T: Digest> fmt::Display for Hash<T> {
@@ -32,8 +31,8 @@ impl<T: Digest> fmt::Display for Hash<T> {
         match &self.digest {
             None => Err(fmt::Error),
             Some(bytes) => {
-                write!(formatter, "{:02x}", &self.function_type)?;
-                write!(formatter, "{:02x}", &self.length)?;
+                write!(formatter, "{:02x}", &self.tag.code())?;
+                write!(formatter, "{:02x}", &self.tag.length())?;
                 for byte in bytes.iter() {
                     write!(formatter, "{:02x}", byte)?;
                 }
@@ -44,36 +43,23 @@ impl<T: Digest> fmt::Display for Hash<T> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Sha2256(Hash<Sha256>);
-
-impl Sha2256 {
-    pub fn new(digest: Option<Output<<Sha256 as FixedOutput>::OutputSize>>) -> Self {
-        Sha2256(Hash {
-            name: "sha2-256".to_string(),
-            function_type: 0x12,
-            length: 0x20,
-            digest,
-        })
-    }
-
-    pub fn digest(&self) -> Option<Output<<Sha256 as FixedOutput>::OutputSize>> {
-        self.0.digest
-    }
-}
-
-impl fmt::Display for Sha2256 {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "{}", self.0)
-    }
-}
-
 pub trait Blot {
     fn blot<Hasher: Digest + Clone>(&self, Hasher) -> Output<<Hasher as FixedOutput>::OutputSize>;
 
-    fn sha2256(&self) -> Sha2256 {
+    fn sha2256(&self) -> Hash<Sha256> {
         let output = self.blot(Sha256::default());
-        Sha2256::new(Some(output))
+        Hash {
+            tag: multihash::Tag::Sha2256,
+            digest: Some(output),
+        }
+    }
+
+    fn sha2512(&self) -> Hash<Sha512> {
+        let output = self.blot(Sha512::default());
+        Hash {
+            tag: multihash::Tag::Sha2512,
+            digest: Some(output),
+        }
     }
 }
 
@@ -90,7 +76,7 @@ fn primitive<Hasher: Digest>(
 impl Blot for str {
     fn blot<Hasher: Digest + Clone>(
         &self,
-        mut hasher: Hasher,
+        hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
         primitive(hasher, Tag::Unicode, self.as_bytes())
     }

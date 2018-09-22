@@ -5,18 +5,12 @@
 // those terms.
 
 extern crate blot;
+extern crate sha2;
 use blot::core::Blot;
 
 fn main() {
-    // println!("{:x}", "foo".blot(Sha2256::default()));
+    println!("{:x}", "foo".blot(sha2::Sha256::default()));
     println!("{}", "foo".sha2256());
+    println!("{}", "foo".sha2512());
     println!("{:x}", "foo".sha2256().digest().unwrap());
-
-    // println!("{:x}", &Blot::<Sha2256>::blot(&String::from("foo")));
-
-    // println!("{:x}", &Blot::<Sha2256>::blot(&1u8));
-    // println!("{:x}", &Blot::<Sha2256>::blot(&1usize));
-
-    // let f = Blot::<Sha2512>::blot("foo");
-    // println!("{:x}", &f);
 }
