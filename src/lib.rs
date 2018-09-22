@@ -8,6 +8,8 @@
 
 extern crate digest;
 extern crate sha2 as crypto_sha2;
+#[macro_use]
+extern crate hex_literal;
 
 pub mod core;
 pub mod multihash;

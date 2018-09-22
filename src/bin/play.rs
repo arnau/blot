@@ -9,8 +9,7 @@ extern crate sha2;
 use blot::core::Blot;
 
 fn main() {
-    println!("{:x}", "foo".blot(sha2::Sha256::default()));
     println!("{}", "foo".sha2256());
-    println!("{}", "foo".sha2512());
-    println!("{:x}", "foo".sha2256().digest().unwrap());
+    println!("{}", 1u16.sha2256());
+    println!("{}", true.sha2256());
 }
