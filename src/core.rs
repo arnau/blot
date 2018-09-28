@@ -326,4 +326,38 @@ mod tests {
             assert_eq!(&actual, expected);
         }
     }
+
+    #[test]
+    fn empty_set_blot() {
+        let expected = "1220043a718774c572bd8a25adbeb1bfcd5c0256ae11cecf9f9c3f925d0e52beaf89";
+        let set: HashSet<u8> = HashSet::new();
+        let actual = format!("{}", set.sha2256());
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn set_blot() {
+        let expected = "1220a4fef47742c80337b2eb0dcc6ed36610c93aca0afef86a65f381020b9de2284d";
+        let mut set: HashSet<&str> = HashSet::new();
+        set.insert("foo");
+        let actual = format!("{}", set.sha2256());
+        assert_eq!(actual, expected);
+    }
+
+    // #[test]
+    // fn empty_dict_blot() {
+    //     let expected = "122018ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4";
+    //     let dict: HashMap<&str, u8> = HashSet::new();
+    //     let actual = format!("{}", dict.sha2256());
+    //     assert_eq!(actual, expected);
+    // }
+
+    // #[test]
+    // fn dict_blot() {
+    //     let expected = "12207ef5237c3027d6c58100afadf37796b3d351025cf28038280147d42fdc53b960";
+    //     let mut dict: HashMap<&str, &str> = HashSet::new();
+    //     dict.insert("foo", "bar");
+    //     let actual = format!("{}", dict.sha2256());
+    //     assert_eq!(actual, expected);
+    // }
 }
