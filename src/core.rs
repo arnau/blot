@@ -76,6 +76,16 @@ fn primitive<Hasher: Digest>(
     hasher.result()
 }
 
+impl<'a, T: ?Sized + Blot> Blot for &'a T {
+    #[inline]
+    fn blot<Hasher: Digest + Clone>(
+        &self,
+        hasher: Hasher,
+    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+        T::blot(*self, hasher)
+    }
+}
+
 impl Blot for str {
     fn blot<Hasher: Digest + Clone>(
         &self,
@@ -275,10 +285,45 @@ mod tests {
 
     #[test]
     fn int_blot() {
-        let expected = "12204cd9b7672d7fbee8fb51fb1e049f690342035f543a8efe734b7b5ffb0c154a45";
-        let actual = format!("{}", 1u8.sha2256());
+        let pairs = [
+            (
+                0,
+                "1220a4e167a76a05add8a8654c169b07b0447a916035aef602df103e8ae0fe2ff390",
+            ),
+            (
+                42,
+                "1220ebc35dc1b8e2602b72beb8d8e5bcdb2babe90f57bcb54ad7282ec798659d2196",
+            ),
+        ];
+        for (raw, expected) in pairs.iter() {
+            let actual = format!("{}", raw.sha2256());
+            assert_eq!(&actual, expected);
+        }
+    }
 
+    #[test]
+    fn empty_list_blot() {
+        let expected = "1220acac86c0e609ca906f632b0e2dacccb2b77d22b0621f20ebece1a4835b93f6f0";
+        let list: Vec<u8> = vec![];
+        let actual = format!("{}", list.sha2256());
         assert_eq!(actual, expected);
     }
 
+    #[test]
+    fn list_blot() {
+        let pairs = [
+            (
+                vec!["foo"],
+                "1220268bc27d4974d9d576222e4cdbb8f7c6bd6791894098645a19eeca9c102d0964",
+            ),
+            (
+                vec!["foo", "bar"],
+                "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2",
+            ),
+        ];
+        for (raw, expected) in pairs.iter() {
+            let actual = format!("{}", raw.sha2256());
+            assert_eq!(&actual, expected);
+        }
+    }
 }

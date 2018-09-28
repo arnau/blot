@@ -9,7 +9,11 @@ extern crate sha2;
 use blot::core::Blot;
 
 fn main() {
-    println!("{}", "foo".sha2256());
-    println!("{}", 1u16.sha2256());
-    println!("{}", true.sha2256());
+    // println!("{}", "foo".sha2256());
+    // println!("{}", 1u16.sha2256());
+    // println!("{}", true.sha2256());
+
+    let v = vec!["foo"];
+    // let v = Some("foo");
+    println!("{}", v.sha2256());
 }
