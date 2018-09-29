@@ -158,7 +158,7 @@ impl Blot for String {
     }
 }
 
-impl<'a> Blot for &'a [u8] {
+impl Blot for [u8] {
     fn blot<Hasher: Digest + Clone>(
         &self,
         hasher: Hasher,
