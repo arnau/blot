@@ -10,7 +10,7 @@ use digest::generic_array::GenericArray;
 use digest::FixedOutput;
 use multihash;
 use std;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use tag::Tag;
 
@@ -66,13 +66,39 @@ pub trait Blot {
     }
 }
 
-fn primitive<Hasher: Digest>(
+/// Hashes a list of bytes tagged with the given tag.
+///
+/// Plumbing function to implement `trait Blot` for new types.
+///
+/// ```
+/// use blot::core;
+/// use blot::tag::Tag;
+/// use blot::sha2256::Sha2256;
+///
+/// core::primitive(Sha2256::default(), Tag::Unicode, "foo".as_bytes());
+/// ```
+pub fn primitive<Hasher: Digest>(
     mut hasher: Hasher,
     tag: Tag,
     bytes: &[u8],
 ) -> Output<<Hasher as FixedOutput>::OutputSize> {
     hasher.input(&tag.to_bytes());
     hasher.input(bytes);
+    hasher.result()
+}
+
+/// Hashes a list of lists of bytes tagged with the given tag.
+///
+/// Plumbing function to implement `trait Blot` for new types.
+pub fn collection<Hasher: Digest>(
+    mut hasher: Hasher,
+    tag: Tag,
+    list: Vec<Vec<u8>>,
+) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    hasher.input(&tag.to_bytes());
+    for bytes in list {
+        hasher.input(&bytes);
+    }
     hasher.result()
 }
 
@@ -172,13 +198,12 @@ impl<T: Blot> Blot for Vec<T> {
     }
 }
 
-// TODO: Explore alternative with fewer gymnastics
 impl<T: Blot + Eq + std::hash::Hash> Blot for HashSet<T> {
     fn blot<Hasher: Digest + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        let mut xs: Vec<Vec<u8>> = self
+        let mut list: Vec<Vec<u8>> = self
             .iter()
             .map(|item| {
                 item.blot(hasher.clone())
@@ -188,11 +213,34 @@ impl<T: Blot + Eq + std::hash::Hash> Blot for HashSet<T> {
                     .collect::<Vec<u8>>()
             }).collect();
 
-        xs.sort_unstable();
+        list.sort_unstable();
 
-        let bytes: Vec<u8> = xs.iter().flat_map(|x| x.clone()).collect();
+        collection(hasher, Tag::Set, list)
+    }
+}
 
-        primitive(hasher, Tag::Set, &bytes)
+impl<K, V> Blot for HashMap<K, V>
+where
+    K: Blot + Eq + std::hash::Hash,
+    V: Blot + PartialEq,
+{
+    fn blot<Hasher: Digest + Clone>(
+        &self,
+        hasher: Hasher,
+    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+        let mut list: Vec<Vec<u8>> = self
+            .iter()
+            .map(|(k, v)| {
+                let mut res: Vec<u8> = Vec::with_capacity(64);
+                res.extend_from_slice(k.blot(hasher.clone()).as_slice());
+                res.extend_from_slice(v.blot(hasher.clone()).as_slice());
+
+                res
+            }).collect();
+
+        list.sort_unstable();
+
+        collection(hasher, Tag::Dict, list)
     }
 }
 
@@ -344,20 +392,20 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
-    // #[test]
-    // fn empty_dict_blot() {
-    //     let expected = "122018ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4";
-    //     let dict: HashMap<&str, u8> = HashSet::new();
-    //     let actual = format!("{}", dict.sha2256());
-    //     assert_eq!(actual, expected);
-    // }
+    #[test]
+    fn empty_dict_blot() {
+        let expected = "122018ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4";
+        let dict: HashMap<&str, u8> = HashMap::new();
+        let actual = format!("{}", dict.sha2256());
+        assert_eq!(actual, expected);
+    }
 
-    // #[test]
-    // fn dict_blot() {
-    //     let expected = "12207ef5237c3027d6c58100afadf37796b3d351025cf28038280147d42fdc53b960";
-    //     let mut dict: HashMap<&str, &str> = HashSet::new();
-    //     dict.insert("foo", "bar");
-    //     let actual = format!("{}", dict.sha2256());
-    //     assert_eq!(actual, expected);
-    // }
+    #[test]
+    fn dict_blot() {
+        let expected = "12207ef5237c3027d6c58100afadf37796b3d351025cf28038280147d42fdc53b960";
+        let mut dict: HashMap<&str, &str> = HashMap::new();
+        dict.insert("foo", "bar");
+        let actual = format!("{}", dict.sha2256());
+        assert_eq!(actual, expected);
+    }
 }
