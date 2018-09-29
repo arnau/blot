@@ -5,15 +5,23 @@
 // those terms.
 
 extern crate blot;
-extern crate sha2;
-use blot::core::Blot;
+extern crate digest;
+use blot::core::{Blot, Hash};
+use digest::Digest;
+
+fn print_digest<T: Digest>(hash: Hash<T>) {
+    match hash.digest() {
+        None => println!("nothing to print"),
+        Some(bytes) => {
+            for byte in bytes.iter() {
+                print!("{:02x}", byte);
+            }
+        }
+    }
+    println!("");
+}
 
 fn main() {
-    // println!("{}", "foo".sha2256());
-    // println!("{}", 1u16.sha2256());
-    // println!("{}", true.sha2256());
-
-    let v = vec!["foo"];
-    // let v = Some("foo");
-    println!("{}", v.sha2256());
+    println!("{}", "foo".blake2b512());
+    // println!("{}", "foo".blake2b256());
 }

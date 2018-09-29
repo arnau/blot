@@ -14,5 +14,6 @@ path = "src/lib.rs"
 
 [dependencies]
 sha2 = "0.7"
+blake2 = "0.7"
 digest = "0.7"
 hex-literal = "0.1"

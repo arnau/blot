@@ -5,9 +5,9 @@
 // those terms.
 
 use digest::generic_array::GenericArray;
-use digest::Digest;
 use digest::FixedOutput;
-use digester::{Sha2256, Sha2512};
+use digest::{Digest, Input, VariableOutput};
+use digester::{Blake2b, Blake2s, Sha2256, Sha2512};
 use multihash;
 use std;
 use std::collections::{HashMap, HashSet};
@@ -23,6 +23,10 @@ pub struct Hash<T: Digest> {
 }
 
 impl<Hasher: Digest> Hash<Hasher> {
+    pub fn tag(&self) -> &multihash::Tag {
+        &self.tag
+    }
+
     pub fn digest(&self) -> &Option<Output<<Hasher as FixedOutput>::OutputSize>> {
         &self.digest
     }
@@ -64,6 +68,30 @@ pub trait Blot {
             digest: Some(output),
         }
     }
+
+    fn blake2b512(&self) -> Hash<Blake2b> {
+        let output = self.blot(Blake2b::default());
+        Hash {
+            tag: multihash::Tag::Blake2b512,
+            digest: Some(output),
+        }
+    }
+
+    // fn blake2b256(&self) -> Hash<Blake2b> {
+    //     let output = self.blot(Blake2b::new_keyed(&[], 256));
+    //     Hash {
+    //         tag: multihash::Tag::Blake2b256,
+    //         digest: Some(output),
+    //     }
+    // }
+
+    fn blake2s256(&self) -> Hash<Blake2s> {
+        let output = self.blot(Blake2s::default());
+        Hash {
+            tag: multihash::Tag::Blake2s256,
+            digest: Some(output),
+        }
+    }
 }
 
 /// Hashes a list of bytes tagged with the given tag.
@@ -90,7 +118,7 @@ pub fn primitive<Hasher: Digest>(
 /// Hashes a list of lists of bytes tagged with the given tag.
 ///
 /// Plumbing function to implement `trait Blot` for new types.
-pub fn collection<Hasher: Digest>(
+pub fn collection<Hasher: Digest + FixedOutput>(
     mut hasher: Hasher,
     tag: Tag,
     list: Vec<Vec<u8>>,
