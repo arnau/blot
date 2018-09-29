@@ -217,12 +217,14 @@ impl<T: Blot> Blot for Vec<T> {
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        let xs: Vec<u8> = self
-            .iter()
-            .flat_map(|item| item.blot(hasher.clone()))
-            .collect();
+        let mut h = hasher.clone();
+        h.input(&Tag::List.to_bytes());
 
-        primitive(hasher, Tag::List, &xs)
+        for el in self {
+            h.input(el.blot(hasher.clone()).as_slice())
+        }
+
+        h.result()
     }
 }
 
