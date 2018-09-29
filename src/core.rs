@@ -5,9 +5,9 @@
 // those terms.
 
 use digest::generic_array::GenericArray;
+use digest::Digest;
 use digest::FixedOutput;
-use digest::{Digest, Input, VariableOutput};
-use digester::{Blake2b, Blake2s, Sha2256, Sha2512};
+use digester::{Blake2b512, Blake2s256, Sha2256, Sha2512};
 use multihash;
 use std;
 use std::collections::{HashMap, HashSet};
@@ -69,24 +69,16 @@ pub trait Blot {
         }
     }
 
-    fn blake2b512(&self) -> Hash<Blake2b> {
-        let output = self.blot(Blake2b::default());
+    fn blake2b512(&self) -> Hash<Blake2b512> {
+        let output = self.blot(Blake2b512::default());
         Hash {
             tag: multihash::Tag::Blake2b512,
             digest: Some(output),
         }
     }
 
-    // fn blake2b256(&self) -> Hash<Blake2b> {
-    //     let output = self.blot(Blake2b::new_keyed(&[], 256));
-    //     Hash {
-    //         tag: multihash::Tag::Blake2b256,
-    //         digest: Some(output),
-    //     }
-    // }
-
-    fn blake2s256(&self) -> Hash<Blake2s> {
-        let output = self.blot(Blake2s::default());
+    fn blake2s256(&self) -> Hash<Blake2s256> {
+        let output = self.blot(Blake2s256::default());
         Hash {
             tag: multihash::Tag::Blake2s256,
             digest: Some(output),

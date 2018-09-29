@@ -66,7 +66,7 @@ pub enum Tag {
     /// SHA3-224 (28-byte hash size)
     Sha3224,
     /// Blake2b-256 (32-byte hash size)
-    Blake2b256,
+    // Blake2b256,
     /// Blake2b-512 (64-byte hash size)
     Blake2b512,
     /// Blake2s-256 (32-byte hash size)
@@ -83,7 +83,7 @@ impl From<u64> for Tag {
             0x15 => Tag::Sha3384,
             0x16 => Tag::Sha3256,
             0x17 => Tag::Sha3224,
-            0xb220 => Tag::Blake2b256,
+            // 0xb220 => Tag::Blake2b256,
             0xb240 => Tag::Blake2b512,
             0xb260 => Tag::Blake2s256,
             _ => unimplemented!(),
@@ -101,7 +101,7 @@ impl From<Tag> for u64 {
             Tag::Sha3384 => 0x15,
             Tag::Sha3256 => 0x16,
             Tag::Sha3224 => 0x17,
-            Tag::Blake2b256 => 0xb220,
+            // Tag::Blake2b256 => 0xb220,
             Tag::Blake2b512 => 0xb240,
             Tag::Blake2s256 => 0xb260,
         }
@@ -125,7 +125,7 @@ impl<'a> From<Tag> for &'a str {
             Tag::Sha3384 => "sha3-384",
             Tag::Sha3256 => "sha3-256",
             Tag::Sha3224 => "sha3-224",
-            Tag::Blake2b256 => "blake2b-256",
+            // Tag::Blake2b256 => "blake2b-256",
             Tag::Blake2b512 => "blake2b-512",
             Tag::Blake2s256 => "blake2s-256",
         }
@@ -143,7 +143,7 @@ impl<'a> From<&'a str> for Tag {
             "sha3-384" => Tag::Sha3384,
             "sha3-256" => Tag::Sha3256,
             "sha3-224" => Tag::Sha3224,
-            "blake2b-256" => Tag::Blake2b256,
+            // "blake2b-256" => Tag::Blake2b256,
             "blake2b-512" => Tag::Blake2b512,
             "blake2s-256" => Tag::Blake2s256,
             _ => unimplemented!(),
@@ -179,7 +179,7 @@ impl Tag {
             Tag::Sha3384 => 48,
             Tag::Sha3256 => 32,
             Tag::Sha3224 => 28,
-            Tag::Blake2b256 => 32,
+            // Tag::Blake2b256 => 32,
             Tag::Blake2b512 => 64,
             Tag::Blake2s256 => 32,
         }
