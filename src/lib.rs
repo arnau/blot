@@ -9,6 +9,7 @@
 extern crate blake2;
 extern crate digest;
 extern crate sha2;
+extern crate sha3;
 #[macro_use]
 extern crate hex_literal;
 

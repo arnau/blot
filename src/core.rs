@@ -7,7 +7,7 @@
 use digest::generic_array::GenericArray;
 use digest::Digest;
 use digest::FixedOutput;
-use digester::{Blake2b512, Blake2s256, Sha2256, Sha2512};
+use digester::{Blake2b512, Blake2s256, Sha2256, Sha2512, Sha3224, Sha3256, Sha3384, Sha3512};
 use multihash;
 use std;
 use std::collections::{HashMap, HashSet};
@@ -65,6 +65,38 @@ pub trait Blot {
         let output = self.blot(Sha2512::default());
         Hash {
             tag: multihash::Tag::Sha2512,
+            digest: Some(output),
+        }
+    }
+
+    fn sha3512(&self) -> Hash<Sha3512> {
+        let output = self.blot(Sha3512::default());
+        Hash {
+            tag: multihash::Tag::Sha3512,
+            digest: Some(output),
+        }
+    }
+
+    fn sha3384(&self) -> Hash<Sha3384> {
+        let output = self.blot(Sha3384::default());
+        Hash {
+            tag: multihash::Tag::Sha3384,
+            digest: Some(output),
+        }
+    }
+
+    fn sha3256(&self) -> Hash<Sha3256> {
+        let output = self.blot(Sha3256::default());
+        Hash {
+            tag: multihash::Tag::Sha3256,
+            digest: Some(output),
+        }
+    }
+
+    fn sha3224(&self) -> Hash<Sha3224> {
+        let output = self.blot(Sha3224::default());
+        Hash {
+            tag: multihash::Tag::Sha3224,
             digest: Some(output),
         }
     }
