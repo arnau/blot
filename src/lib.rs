@@ -12,10 +12,6 @@ extern crate sha2 as crypto_sha2;
 extern crate hex_literal;
 
 pub mod core;
+pub mod digester;
 pub mod multihash;
-pub mod sha2256;
-// pub mod sha2512;
 pub mod tag;
-
-// pub use sha2256::Sha2256;
-// pub use sha2512::Sha2512;

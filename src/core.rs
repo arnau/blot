@@ -4,10 +4,10 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
-use crypto_sha2::Digest;
-use crypto_sha2::{Sha256, Sha512};
 use digest::generic_array::GenericArray;
+use digest::Digest;
 use digest::FixedOutput;
+use digester::{Sha2256, Sha2512};
 use multihash;
 use std;
 use std::collections::{HashMap, HashSet};
@@ -49,16 +49,16 @@ impl<T: Digest> fmt::Display for Hash<T> {
 pub trait Blot {
     fn blot<Hasher: Digest + Clone>(&self, Hasher) -> Output<<Hasher as FixedOutput>::OutputSize>;
 
-    fn sha2256(&self) -> Hash<Sha256> {
-        let output = self.blot(Sha256::default());
+    fn sha2256(&self) -> Hash<Sha2256> {
+        let output = self.blot(Sha2256::default());
         Hash {
             tag: multihash::Tag::Sha2256,
             digest: Some(output),
         }
     }
 
-    fn sha2512(&self) -> Hash<Sha512> {
-        let output = self.blot(Sha512::default());
+    fn sha2512(&self) -> Hash<Sha2512> {
+        let output = self.blot(Sha2512::default());
         Hash {
             tag: multihash::Tag::Sha2512,
             digest: Some(output),
@@ -73,7 +73,7 @@ pub trait Blot {
 /// ```
 /// use blot::core;
 /// use blot::tag::Tag;
-/// use blot::sha2256::Sha2256;
+/// use blot::digester::Sha2256;
 ///
 /// core::primitive(Sha2256::default(), Tag::Unicode, "foo".as_bytes());
 /// ```
@@ -250,7 +250,7 @@ mod tests {
     use digest::generic_array::typenum::U32;
 
     // Test helper
-    fn hash2256_from_slice(slice: &[u8]) -> Hash<Sha256> {
+    fn hash2256_from_slice(slice: &[u8]) -> Hash<Sha2256> {
         let digest = *GenericArray::<u8, U32>::from_slice(slice);
         Hash {
             tag: multihash::Tag::Sha2256,
