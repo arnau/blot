@@ -10,7 +10,7 @@ use digest::FixedOutput;
 use digester::{Blake2b512, Blake2s256, Sha2256, Sha2512, Sha3224, Sha3256, Sha3384, Sha3512};
 use multihash;
 use std;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt;
 use tag::Tag;
 
@@ -274,6 +274,31 @@ impl<T: Blot + Eq + std::hash::Hash> Blot for HashSet<T> {
 }
 
 impl<K, V> Blot for HashMap<K, V>
+where
+    K: Blot + Eq + std::hash::Hash,
+    V: Blot + PartialEq,
+{
+    fn blot<Hasher: Digest + Clone>(
+        &self,
+        hasher: Hasher,
+    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+        let mut list: Vec<Vec<u8>> = self
+            .iter()
+            .map(|(k, v)| {
+                let mut res: Vec<u8> = Vec::with_capacity(64);
+                res.extend_from_slice(k.blot(hasher.clone()).as_slice());
+                res.extend_from_slice(v.blot(hasher.clone()).as_slice());
+
+                res
+            }).collect();
+
+        list.sort_unstable();
+
+        collection(hasher, Tag::Dict, list)
+    }
+}
+
+impl<K, V> Blot for BTreeMap<K, V>
 where
     K: Blot + Eq + std::hash::Hash,
     V: Blot + PartialEq,
