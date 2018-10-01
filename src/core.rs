@@ -323,6 +323,79 @@ where
     }
 }
 
+impl Blot for f64 {
+    fn blot<Hasher: Digest + Clone>(
+        &self,
+        hasher: Hasher,
+    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+        if self.is_nan() {
+            primitive(hasher, Tag::Float, "NaN".as_bytes())
+        } else if self.is_infinite() {
+            let s = if self.is_sign_negative() {
+                "-Infinity"
+            } else {
+                "Infinity"
+            };
+            primitive(hasher, Tag::Float, s.as_bytes())
+        } else {
+            primitive(hasher, Tag::Float, float_normalize(*self).as_bytes())
+        }
+    }
+}
+
+pub fn float_normalize(mut f: f64) -> String {
+    if f == 0.0 {
+        return "+0:".to_owned();
+    }
+
+    let mut s = String::new();
+
+    // sign
+    if f < 0. {
+        s.push('-');
+        f = -f;
+    } else {
+        s.push('+');
+    }
+
+    // exponent
+    let mut e = 0;
+
+    while f > 1. {
+        f = f / 2.;
+        e = e + 1;
+    }
+
+    while f <= 0.5 {
+        f = f * 2.;
+        e = e - 1;
+    }
+
+    s.push_str(&e.to_string());
+    s.push(':');
+
+    // mantissa
+    assert!(f <= 1.);
+    assert!(f > 0.5);
+    // TODO: Return Result
+
+    while f != 0. {
+        if f >= 1. {
+            s.push('1');
+            f = f - 1.;
+        } else {
+            s.push('0');
+        }
+
+        assert!(f < 1.);
+        assert!(s.len() < 1000);
+
+        f = f * 2.;
+    }
+
+    s
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -420,6 +493,39 @@ mod tests {
             (
                 42,
                 "1220ebc35dc1b8e2602b72beb8d8e5bcdb2babe90f57bcb54ad7282ec798659d2196",
+            ),
+        ];
+        for (raw, expected) in pairs.iter() {
+            let actual = format!("{}", raw.sha2256());
+            assert_eq!(&actual, expected);
+        }
+    }
+
+    #[test]
+    fn zero_float_blot() {
+        let expected = "122060101d8c9cb988411468e38909571f357daa67bff5a7b0a3f9ae295cd4aba33d";
+        let actual = format!("{}", 0.0.sha2256());
+        assert_eq!(actual, expected);
+    }
+    #[test]
+    fn float_blot() {
+        use std::f64;
+        let pairs = [
+            (
+                -0.0,
+                "122060101d8c9cb988411468e38909571f357daa67bff5a7b0a3f9ae295cd4aba33d",
+            ),
+            (
+                f64::NAN,
+                "12205d6c301a98d835732d459d7018a8d546872f7ba3c39a45ba481746d2c6d566d9",
+            ),
+            (
+                f64::INFINITY,
+                "1220e0309b2362dc6aaf595338cd9e116761640f74927bcdc4f76e8e6433738f25c7",
+            ),
+            (
+                f64::NEG_INFINITY,
+                "12201167518d5554ba86d9b176af0a57f29d425bedaa9847c245cc397b37533228f7",
             ),
         ];
         for (raw, expected) in pairs.iter() {

@@ -8,7 +8,7 @@ extern crate blot;
 extern crate digest;
 extern crate serde_json;
 
-use blot::core::{Blot, Hash};
+use blot::core::{float_normalize, Blot, Hash};
 // use blot::value::Value;
 use digest::Digest;
 use serde_json::{Error, Value};
@@ -46,5 +46,18 @@ fn main() {
     // println!("{}", "foo".blake2b256());
 
     // println!("{:?}", val);
-    untyped_example();
+    // untyped_example();
+
+    // println!("{}", float_normalize(0.));
+    // println!("{}", float_normalize(1.));
+    // println!("{}", float_normalize(2.));
+    // println!("{}", float_normalize(10.));
+    // println!("{}", float_normalize(-1500.2));
+    // println!("{:b}", 15);
+    use std::f64;
+    let nan = f64::NAN;
+    let neg_inf: f64 = f64::NEG_INFINITY;
+    let f = 7.0_f64;
+
+    println!("{}", neg_inf.is_sign_negative());
 }
