@@ -323,6 +323,15 @@ where
     }
 }
 
+impl Blot for f32 {
+    fn blot<Hasher: Digest + Clone>(
+        &self,
+        hasher: Hasher,
+    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+        (*self as f64).blot(hasher)
+    }
+}
+
 impl Blot for f64 {
     fn blot<Hasher: Digest + Clone>(
         &self,
