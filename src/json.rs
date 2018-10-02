@@ -161,6 +161,15 @@ mod tests {
                 assert_eq!(&actual, expected);
             }
         }
+
+        #[test]
+        fn list() {
+            let expected = "1220acac86c0e609ca906f632b0e2dacccb2b77d22b0621f20ebece1a4835b93f6f0";
+            let value: Value = serde_json::from_str(r#"[]"#).unwrap();
+            let actual = format!("{}", &value.sha2256());
+
+            assert_eq!(&actual, expected);
+        }
     }
 
     #[cfg(feature = "common_json")]
