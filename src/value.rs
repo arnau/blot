@@ -4,18 +4,226 @@
 // This file may not be copied, modified, or distributed except
 // according to those terms.
 
-use std::collections::{HashMap, HashSet};
+use core::{collection, Blot, Output};
+use digest::{Digest, FixedOutput};
+use std::collections::HashMap;
+use tag::Tag;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Value {
     Null,
     Bool(bool),
     Integer(i64),
+    Float(f64),
     String(String),
     Raw(Vec<u8>),
     List(Vec<Value>),
     // HashSet require Hash trait which makes this recursive structure too complex for this
     // exercise
     Set(Vec<Value>),
-    Map(HashMap<String, Value>),
+    Dict(HashMap<String, Value>),
+}
+
+impl Blot for Value {
+    fn blot<Hasher: Digest + Clone>(
+        &self,
+        hasher: Hasher,
+    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+        match self {
+            Value::Null => None::<u8>.blot(hasher.clone()),
+            Value::Bool(raw) => raw.blot(hasher.clone()),
+            Value::Integer(raw) => raw.blot(hasher.clone()),
+            Value::Float(raw) => raw.blot(hasher.clone()),
+            Value::String(raw) => raw.blot(hasher.clone()),
+            Value::Raw(raw) => raw.blot(hasher.clone()),
+            Value::List(raw) => raw.blot(hasher.clone()),
+            Value::Set(raw) => {
+                let mut list: Vec<Vec<u8>> = raw
+                    .iter()
+                    .map(|item| {
+                        item.blot(hasher.clone())
+                            .as_slice()
+                            .iter()
+                            .map(|x| *x)
+                            .collect::<Vec<u8>>()
+                    }).collect();
+
+                list.sort_unstable();
+                list.dedup();
+
+                collection(hasher, Tag::Set, list)
+            }
+            Value::Dict(raw) => raw.blot(hasher.clone()),
+        }
+    }
+}
+
+impl<'a> From<&'a str> for Value {
+    fn from(raw: &str) -> Value {
+        Value::String(raw.into())
+    }
+}
+
+impl<'a> From<String> for Value {
+    fn from(raw: String) -> Value {
+        Value::String(raw)
+    }
+}
+
+impl From<i64> for Value {
+    fn from(raw: i64) -> Value {
+        Value::Integer(raw)
+    }
+}
+
+impl From<f64> for Value {
+    fn from(raw: f64) -> Value {
+        Value::Float(raw)
+    }
+}
+
+impl From<Vec<Value>> for Value {
+    fn from(raw: Vec<Value>) -> Value {
+        Value::List(raw)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn common() {
+        let expected = "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2";
+        let value: Value = vec!["foo".into(), "bar".into()].into();
+        let actual = format!("{}", &value.sha2256());
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn int_list() {
+        let pairs = [
+            (
+                Value::List(vec![123.into()]),
+                "12201b93f704451e1a7a1b8c03626ffcd6dec0bc7ace947ff60d52e1b69b4658ccaa",
+            ),
+            (
+                Value::List(vec![1.into(), 2.into(), 3.into()]),
+                "1220157bf16c70bd4c9673ffb5030552df0ee2c40282042ccdf6167850edc9044ab7",
+            ),
+            (
+                Value::List(vec![123456789012345.into()]),
+                "12203488b9bc37cce8223a032760a9d4ef488cdfebddd9e1af0b31fcd1d7006369a4",
+            ),
+            (
+                Value::List(vec![123456789012345.into(), 678901234567890.into()]),
+                "1220031ef1aaeccea3bced3a1c6237a4fc00ed4d629c9511922c5a3f4e5c128b0ae4",
+            ),
+        ];
+
+        for (value, expected) in pairs.iter() {
+            let actual = format!("{}", &value.sha2256());
+
+            assert_eq!(&actual, expected);
+        }
+    }
+
+    #[test]
+    fn floats() {
+        let mut map: HashMap<String, Value> = HashMap::new();
+        map.insert(
+            "bar".into(),
+            vec![
+                "baz".into(),
+                Value::Null,
+                1.0.into(),
+                1.5.into(),
+                0.0001.into(),
+                1000.0.into(),
+                2.0.into(),
+                (-23.1234).into(),
+                2.0.into(),
+            ].into(),
+        );
+        let value = Value::List(vec!["foo".into(), Value::Dict(map)]);
+        let expected = "1220783a423b094307bcb28d005bc2f026ff44204442ef3513585e7e73b66e3c2213";
+        let actual = format!("{}", &value.sha2256());
+
+        assert_eq!(&actual, expected);
+    }
+
+    #[test]
+    fn int_floats() {
+        let mut map: HashMap<String, Value> = HashMap::new();
+        map.insert(
+            "bar".into(),
+            vec![
+                "baz".into(),
+                Value::Null,
+                1.into(),
+                1.5.into(),
+                0.0001.into(),
+                1000.into(),
+                2.into(),
+                (-23.1234).into(),
+                2.into(),
+            ].into(),
+        );
+        let value = Value::List(vec!["foo".into(), Value::Dict(map)]);
+        let expected = "1220726e7ae9e3fadf8a2228bf33e505a63df8db1638fa4f21429673d387dbd1c52a";
+        let actual = format!("{}", &value.sha2256());
+
+        assert_eq!(&actual, expected);
+    }
+
+    #[test]
+    fn set() {
+        let mut map: HashMap<String, Value> = HashMap::new();
+        let mut map2: HashMap<String, Value> = HashMap::new();
+        map2.insert(
+            "thing2".into(),
+            Value::Set(vec![1.into(), 2.into(), "s".into()]),
+        );
+        map.insert("thing1".into(), Value::Dict(map2));
+        map.insert("thing3".into(), 1234.567.into());
+        let value = Value::Dict(map);
+
+        let expected = "1220618cf0582d2e716a70e99c2f3079d74892fec335e3982eb926835967cb0c246c";
+        let actual = format!("{}", &value.sha2256());
+
+        assert_eq!(&actual, expected);
+    }
+
+    #[test]
+    fn complex_set() {
+        let value = Value::Set(vec![
+            "foo".into(),
+            23.6.into(),
+            Value::Set(vec![Value::Set(vec![])]),
+            Value::Set(vec![Value::Set(vec![1.into()])]),
+        ]);
+
+        let expected = "12203773b0a5283f91243a304d2bb0adb653564573bc5301aa8bb63156266ea5d398";
+        let actual = format!("{}", &value.sha2256());
+
+        assert_eq!(&actual, expected);
+    }
+
+    #[test]
+    fn complex_set_repeated() {
+        let value = Value::Set(vec![
+            "foo".into(),
+            23.6.into(),
+            Value::Set(vec![Value::Set(vec![])]),
+            Value::Set(vec![Value::Set(vec![1.into()])]),
+            Value::Set(vec![Value::Set(vec![])]),
+        ]);
+
+        let expected = "12203773b0a5283f91243a304d2bb0adb653564573bc5301aa8bb63156266ea5d398";
+        let actual = format!("{}", &value.sha2256());
+
+        assert_eq!(&actual, expected);
+    }
+
 }

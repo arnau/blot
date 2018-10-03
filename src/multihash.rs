@@ -49,7 +49,7 @@ impl Multihash for Bag {
 /// assert_eq!(code, 0x14);
 /// assert_eq!(length, 64);
 /// ```
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Tag {
     /// SHA-1 (20-byte hash size)
     Sha1,

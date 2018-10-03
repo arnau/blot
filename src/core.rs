@@ -16,7 +16,7 @@ use tag::Tag;
 
 pub type Output<T> = GenericArray<u8, T>;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Hash<T: Digest> {
     tag: multihash::Tag,
     digest: Option<Output<<T as FixedOutput>::OutputSize>>,

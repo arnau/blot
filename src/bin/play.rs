@@ -6,17 +6,11 @@
 
 extern crate blot;
 extern crate digest;
-extern crate itertools;
-extern crate serde_json;
 
-use blot::core::{float_normalize, Blot, Hash};
-// use blot::value::Value;
+use blot::core::{Blot, Hash};
+use blot::value::Value;
 use digest::Digest;
-use serde_json::{Error, Value};
-
-use itertools::Itertools;
-use std::fs::File;
-use std::io::prelude::*;
+use std::collections::HashMap;
 
 // fn print_digest<T: Digest>(hash: Hash<T>) {
 //     match hash.digest() {
@@ -31,18 +25,10 @@ use std::io::prelude::*;
 // }
 
 fn main() -> std::io::Result<()> {
-    let mut file = File::open("tests/common_json.test")?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    let lines: Vec<&str> = contents
-        .lines()
-        .filter(|x| x.len() != 0 && !x.starts_with('#'))
-        .collect();
+    let mut dict: HashMap<String, Value> = HashMap::new();
+    dict.insert("foo".into(), Value::Integer(1));
 
-    for line in &lines.into_iter().chunks(2) {
-        let pair: Vec<&str> = line.collect();
-        println!("{:?}", &pair);
-    }
+    println!("{}", dict.sha2256());
 
     Ok(())
 }
