@@ -4,6 +4,8 @@
 // This file may not be copied, modified, or distributed except
 // according to those terms.
 
+#![cfg(feature = "common_json")]
+
 extern crate blot;
 extern crate digest;
 extern crate itertools;
@@ -31,7 +33,6 @@ fn format_digest<T: Digest>(hash: Hash<T>) -> String {
     s
 }
 
-#[cfg(feature = "common_json")]
 #[test]
 fn common_json_golden() {
     let mut file = File::open("tests/common_json.test").unwrap();

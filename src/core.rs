@@ -187,7 +187,6 @@ impl Blot for [u8] {
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        println!("raw");
         primitive(hasher, Tag::Raw, self)
     }
 }
