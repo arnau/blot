@@ -5,6 +5,7 @@
 // according to those terms.
 
 use core::{collection, Blot, Output};
+use digest::generic_array::GenericArray;
 use digest::{Digest, FixedOutput};
 use std::collections::HashMap;
 use tag::Tag;
@@ -16,6 +17,7 @@ pub enum Value {
     Integer(i64),
     Float(f64),
     String(String),
+    Redacted(Vec<u8>),
     Raw(Vec<u8>),
     List(Vec<Value>),
     // HashSet require Hash trait which makes this recursive structure too complex for this
@@ -35,7 +37,8 @@ impl Blot for Value {
             Value::Integer(raw) => raw.blot(hasher.clone()),
             Value::Float(raw) => raw.blot(hasher.clone()),
             Value::String(raw) => raw.blot(hasher.clone()),
-            Value::Raw(raw) => raw.blot(hasher.clone()),
+            Value::Redacted(raw) => GenericArray::from_slice(raw).clone(),
+            Value::Raw(raw) => raw.as_slice().blot(hasher.clone()),
             Value::List(raw) => raw.blot(hasher.clone()),
             Value::Set(raw) => {
                 let mut list: Vec<Vec<u8>> = raw
@@ -224,6 +227,59 @@ mod tests {
         let actual = format!("{}", &value.sha2256());
 
         assert_eq!(&actual, expected);
+    }
+
+    #[test]
+    fn raw() {
+        let pairs = vec![
+            (
+                Value::Raw(vec![]),
+                "1220454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1",
+            ),
+            (
+                Value::Raw(vec![255, 255]),
+                "122043ad246c14bf0bc0b2ac9cab9fae202a181ab4c6abb07fb40cad8c67a4cab8ee",
+            ),
+            (
+                Value::Raw(vec![0, 0, 0]),
+                "1220d877bf4e5023a6df5262218800a7162e240c84e44696bb2c3ad1c5e756f3dac1",
+            ),
+        ];
+
+        for (value, expected) in pairs.iter() {
+            let actual = format!("{}", &value.sha2256());
+
+            assert_eq!(&actual, expected);
+        }
+    }
+
+    #[test]
+    fn redacted() {
+        let pairs = vec![
+            (
+                Value::Redacted(
+                    hex!("454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1")
+                        .to_vec(),
+                ),
+                "1220454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1",
+            ),
+            (
+                Value::List(vec![
+                    Value::Redacted(
+                        hex!("a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038")
+                            .to_vec(),
+                    ),
+                    "bar".into(),
+                ]),
+                "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2",
+            ),
+        ];
+
+        for (value, expected) in pairs.iter() {
+            let actual = format!("{}", &value.sha2256());
+
+            assert_eq!(&actual, expected);
+        }
     }
 
 }

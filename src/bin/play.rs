@@ -7,7 +7,7 @@
 extern crate blot;
 extern crate digest;
 
-use blot::core::{Blot, Hash};
+use blot::core::Blot;
 use blot::value::Value;
 use digest::Digest;
 use std::collections::HashMap;
@@ -25,10 +25,9 @@ use std::collections::HashMap;
 // }
 
 fn main() -> std::io::Result<()> {
-    let mut dict: HashMap<String, Value> = HashMap::new();
-    dict.insert("foo".into(), Value::Integer(1));
+    let v = vec!["foo", "bar"];
 
-    println!("{}", dict.sha2256());
+    println!("{}", v.sha2256());
 
     Ok(())
 }
