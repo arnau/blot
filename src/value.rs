@@ -61,6 +61,32 @@ impl Blot for Value {
     }
 }
 
+#[macro_export]
+macro_rules! set {
+    ( $( $x:expr ),* ) => {
+        {
+            let mut temp_vec: Vec<Value> = Vec::new();
+            $(
+                temp_vec.push($x.into());
+            )*
+            Value::Set(temp_vec)
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! list {
+    ( $( $x:expr ),* ) => {
+        {
+            let mut temp_vec: Vec<Value> = Vec::new();
+            $(
+                temp_vec.push($x.into());
+            )*
+            Value::List(temp_vec)
+        }
+    };
+}
+
 impl<'a> From<&'a str> for Value {
     fn from(raw: &str) -> Value {
         Value::String(raw.into())
@@ -108,19 +134,19 @@ mod tests {
     fn int_list() {
         let pairs = [
             (
-                Value::List(vec![123.into()]),
+                list![123],
                 "12201b93f704451e1a7a1b8c03626ffcd6dec0bc7ace947ff60d52e1b69b4658ccaa",
             ),
             (
-                Value::List(vec![1.into(), 2.into(), 3.into()]),
+                list![1, 2, 3],
                 "1220157bf16c70bd4c9673ffb5030552df0ee2c40282042ccdf6167850edc9044ab7",
             ),
             (
-                Value::List(vec![123456789012345.into()]),
+                list![123456789012345],
                 "12203488b9bc37cce8223a032760a9d4ef488cdfebddd9e1af0b31fcd1d7006369a4",
             ),
             (
-                Value::List(vec![123456789012345.into(), 678901234567890.into()]),
+                list![123456789012345, 678901234567890],
                 "1220031ef1aaeccea3bced3a1c6237a4fc00ed4d629c9511922c5a3f4e5c128b0ae4",
             ),
         ];
@@ -137,19 +163,19 @@ mod tests {
         let mut map: HashMap<String, Value> = HashMap::new();
         map.insert(
             "bar".into(),
-            vec![
-                "baz".into(),
+            list![
+                "baz",
                 Value::Null,
-                1.0.into(),
-                1.5.into(),
-                0.0001.into(),
-                1000.0.into(),
-                2.0.into(),
-                (-23.1234).into(),
-                2.0.into(),
-            ].into(),
+                1.0,
+                1.5,
+                0.0001,
+                1000.0,
+                2.0,
+                -23.1234,
+                2.0
+            ],
         );
-        let value = Value::List(vec!["foo".into(), Value::Dict(map)]);
+        let value = list!["foo", Value::Dict(map)];
         let expected = "1220783a423b094307bcb28d005bc2f026ff44204442ef3513585e7e73b66e3c2213";
         let actual = format!("{}", &value.sha2256());
 
@@ -200,12 +226,7 @@ mod tests {
 
     #[test]
     fn complex_set() {
-        let value = Value::Set(vec![
-            "foo".into(),
-            23.6.into(),
-            Value::Set(vec![Value::Set(vec![])]),
-            Value::Set(vec![Value::Set(vec![1.into()])]),
-        ]);
+        let value = set!{"foo", 23.6, set!{set!{}}, set!{set!{1}}};
 
         let expected = "12203773b0a5283f91243a304d2bb0adb653564573bc5301aa8bb63156266ea5d398";
         let actual = format!("{}", &value.sha2256());
@@ -215,13 +236,13 @@ mod tests {
 
     #[test]
     fn complex_set_repeated() {
-        let value = Value::Set(vec![
-            "foo".into(),
-            23.6.into(),
-            Value::Set(vec![Value::Set(vec![])]),
-            Value::Set(vec![Value::Set(vec![1.into()])]),
-            Value::Set(vec![Value::Set(vec![])]),
-        ]);
+        let value = set!{
+            "foo",
+            23.6,
+            set!{set!{}},
+            set!{set!{1}},
+            set!{set!{}}
+        };
 
         let expected = "12203773b0a5283f91243a304d2bb0adb653564573bc5301aa8bb63156266ea5d398";
         let actual = format!("{}", &value.sha2256());
