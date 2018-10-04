@@ -21,6 +21,7 @@
 //! ```
 
 use core::{collection, Blot, Output};
+use digest::generic_array::GenericArray;
 use digest::{Digest, FixedOutput};
 use serde_json::{Map, Number, Value};
 use tag::Tag;
@@ -85,11 +86,21 @@ impl Blot for Value {
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+        use hex::FromHex;
         match self {
             Value::Null => None::<u8>.blot(hasher.clone()),
             Value::Bool(raw) => raw.blot(hasher.clone()),
             Value::Number(raw) => raw.blot(hasher.clone()),
-            Value::String(raw) => raw.blot(hasher.clone()),
+            Value::String(raw) => {
+                if raw.starts_with("**REDACTED**") {
+                    let slice =
+                        Vec::from_hex(raw.get(12..).expect("REDACTED")).expect("Hexadecimal");
+
+                    GenericArray::from_slice(&slice).clone()
+                } else {
+                    raw.blot(hasher.clone())
+                }
+            }
             Value::Array(raw) => raw.blot(hasher.clone()),
             Value::Object(raw) => raw.blot(hasher.clone()),
         }
@@ -105,6 +116,15 @@ mod tests {
     fn common() {
         let expected = "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2";
         let value: Value = serde_json::from_str(r#"["foo", "bar"]"#).unwrap();
+        let actual = format!("{}", &value.sha2256());
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn common_redacted() {
+        let expected = "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2";
+        let value: Value = serde_json::from_str(r#"["**REDACTED**a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038", "bar"]"#).unwrap();
         let actual = format!("{}", &value.sha2256());
 
         assert_eq!(actual, expected);

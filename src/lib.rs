@@ -12,6 +12,7 @@ extern crate sha2;
 extern crate sha3;
 #[macro_use]
 extern crate hex_literal;
+extern crate hex;
 extern crate serde_json;
 
 pub mod core;
