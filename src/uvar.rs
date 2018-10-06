@@ -4,128 +4,155 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
-//! Uvar is an implementation of unsigned variable integers
+//! Uvar is an implementation of unsigned variable integers.
+//!
+//! https://github.com/multiformats/unsigned-varint
 
-const U8_LEN: usize = 2;
-const U16_LEN: usize = 3;
-const U32_LEN: usize = 5;
-const U64_LEN: usize = 10;
-const U128_LEN: usize = 19;
+const MAXBYTES: usize = 9;
 
-// https://github.com/paritytech/unsigned-varint/blob/master/src/decode.rs
-macro_rules! encode {
-    ($number:expr, $buf:expr) => {{
-        let mut n = $number;
-        let mut i = 0;
-        for b in $buf.iter_mut() {
-            *b = n as u8 | 0x80;
-            n >>= 7;
-            if n == 0 {
-                *b &= 0x7f;
-                break;
-            }
-            i += 1
+// TODO: Internal representation is a vector for the time being. In the future it might change to
+// either u64 or an array.
+#[derive(Debug, PartialEq)]
+pub struct Uvar(Vec<u8>);
+
+impl Uvar {
+    /// Consumes the list of bytes.
+    ///
+    /// ```
+    /// use blot::uvar::Uvar;
+    ///
+    /// assert_eq!(Uvar::from_bytes(&[0x12]).unwrap().to_bytes(), vec![0x12]);
+    /// ```
+    pub fn to_bytes(self) -> Vec<u8> {
+        self.0
+    }
+
+    /// Transforms a byte list into a uvar.
+    pub fn from_bytes(buffer: &[u8]) -> Result<Uvar, UvarError> {
+        if buffer.len() > MAXBYTES {
+            return Err(UvarError::Overflow);
         }
-        debug_assert_eq!(n, 0);
-        &$buf[0..=i]
-    }};
-}
 
-macro_rules! decode {
-    ($buf:expr, $max_bytes:expr, $typ:ident) => {{
+        let (n, _) = Uvar::take(buffer)?;
+
+        Ok(n)
+    }
+
+    /// Takes a uvar from a list of bytes and returns it with the rest of bytes.
+    ///
+    /// ```
+    /// use blot::uvar::Uvar;
+    ///
+    /// let buffer = vec![0x12, 0x07, 0x06];
+    /// let (uvar, bytes) = Uvar::take(&buffer).unwrap();
+    ///
+    /// assert_eq!(uvar, Uvar::from_bytes(&[0x12]).unwrap());
+    /// ```
+    pub fn take(buffer: &[u8]) -> Result<(Uvar, &[u8]), UvarError> {
         let mut n = 0;
-        for (i, b) in $buf.iter().cloned().enumerate() {
-            let k = $typ::from(b & 0x7F);
-            n |= k << (i * 7);
+
+        for (i, b) in buffer.into_iter().enumerate() {
+            let k = u64::from(b & 0x7f);
+            n = n | k << (i * 7);
+
             if b & 0x80 == 0 {
-                return Ok((n, &$buf[i + 1..]));
+                let code = Uvar((&buffer[..i + 1]).into());
+                let rest = &buffer[i + 1..];
+
+                return Ok((code, rest));
             }
-            if i == $max_bytes {
-                return Err("Overflow".into());
+
+            if i >= MAXBYTES {
+                return Err(UvarError::Overflow);
             }
         }
-        Err("Insufficient".into())
-    }};
-}
 
-pub fn length(value: u64) -> usize {
-    let zero_len = 64 - value.leading_zeros();
-    let offset = if zero_len == 0 { 7 } else { 6 };
-    ((offset + zero_len) / 7) as usize
-}
-
-pub fn encode(value: u64, buf: &mut [u8]) -> &[u8] {
-    let mut off = 0;
-    let mut val = value;
-
-    while val > 127 {
-        buf[off] = (val as u8) | 128;
-        off += 1;
-        val >>= 7;
+        Err(UvarError::Underflow)
     }
-    buf[off] = val as u8;
-
-    buf
 }
 
-pub fn decode(buf: &[u8]) -> u64 {
-    let mut val = 0 as u64;
-    let mut fac = 1 as u64;
-    let mut off = 0;
+// TODO: Review usefulness
+impl From<u64> for Uvar {
+    fn from(n: u64) -> Uvar {
+        let mut buffer = Vec::with_capacity(9);
+        let mut value = n;
 
-    loop {
-        let byte = buf[off];
-        off += 1;
-        val += fac * u64::from(byte & 127);
-        fac <<= 7;
-        if byte & 128 == 0 {
-            break;
+        while value > 0x7F {
+            buffer.push((value as u8) | 0x80);
+            value >>= 7;
         }
+
+        buffer.push(value as u8);
+
+        Uvar(buffer)
+    }
+}
+
+// macro_rules! impl_for_array (($len:expr) => {
+//     impl From<Uvar> for [u8; $len] {
+//         fn from(n: Uvar) -> [u8; $len] {
+//             let mut buffer = [0; $len];
+//             let mut value = n.unbox();
+//             let mut i = 0;
+
+//             while value > 0x7F {
+//                 buffer[i] = (value as u8) | 0x80;
+//                 value >>= 7;
+//                 i += 1;
+//             }
+
+//             buffer[i] = value as u8;
+
+//             buffer
+//         }
+//     }
+// });
+
+// impl_for_array!(9);
+// impl_for_array!(8);
+// impl_for_array!(7);
+// impl_for_array!(6);
+// impl_for_array!(5);
+// impl_for_array!(4);
+// impl_for_array!(3);
+// impl_for_array!(2);
+// impl_for_array!(1);
+
+#[derive(Debug)]
+pub enum UvarError {
+    Overflow,
+    Underflow,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn from_bytes_single() {
+        let actual = Uvar::from_bytes(&[0x12]).unwrap();
+        let expected = Uvar(vec![0x12]);
+        assert_eq!(actual, expected);
     }
 
-    val
-}
+    #[test]
+    fn from_bytes_multi() {
+        let actual = Uvar::from_bytes(&[0xb2, 0x40]).unwrap();
+        let expected = Uvar(vec![0xb2, 0x40]);
+        assert_eq!(actual, expected);
+    }
 
-fn has_significant_bit(n: u8) -> bool {
-    (n & (0b00000001 << 7)) != 0
-}
+    #[test]
+    fn to_bytes() {
+        let actual = Uvar(vec![0xb2, 0x40]).to_bytes();
+        let expected = &[0xb2, 0x40];
+        assert_eq!(&actual, expected);
+    }
 
-fn shifu(n: u8) -> u8 {
-    n & 0b10000000
-}
-
-fn encu16(n: u16, buf: &mut [u8; U16_LEN]) -> &[u8] {
-    encode!(n, buf)
-}
-
-fn u16(buf: &[u8]) -> Result<(u16, &[u8]), String> {
-    decode!(buf, 2, u16)
-}
-
-fn u64(buf: &[u8]) -> Result<(u64, &[u8]), String> {
-    decode!(buf, 9, u64)
-}
-
-fn main() {
-    println!("{:x}", 0xb240);
-    println!("{:b}", 0xb240);
-
-    println!("{:?}", has_significant_bit(0x12));
-    println!("{:08b}", 0x12);
-    println!("{:?}", has_significant_bit(0xb2));
-    println!("{:08b}", 0xb2);
-
-    println!("{:08b}", shifu(0xb2));
-    println!("{:08b}", shifu(0x12));
-
-    println!("{:?}", encode(0xb240, &mut [0; U16_LEN]));
-    println!("{:?}", encu16(0xb240, &mut [0; U16_LEN]));
-    let (n, rest) = u16(&[192, 228, 2]).unwrap();
-    println!("{:x}, {:?}", n, rest);
-
-    let (n64, rest64) = u64(&[192, 228, 2]).unwrap();
-    println!("{:x}, {:?}", n64, rest64);
-
-    println!("{:x}", decode(&[192, 228, 2]));
-    println!("{:x}", u64::from_str_radix("b240", 16).unwrap());
+    #[test]
+    fn identity() {
+        let actual = Uvar::from_bytes(&[0xb2, 0x40]).unwrap().to_bytes();
+        let expected = &[0xb2, 0x40];
+        assert_eq!(&actual, expected);
+    }
 }

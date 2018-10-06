@@ -20,4 +20,5 @@ pub mod digester;
 pub mod json;
 pub mod multihash;
 pub mod tag;
+pub mod uvar;
 pub mod value;

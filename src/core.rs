@@ -214,15 +214,14 @@ impl<'a> Blot for bool {
 }
 
 macro_rules! blot_integer (($type:ident) => {
- impl Blot for $type {
-    fn blot<Hasher: Digest + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        primitive(hasher, Tag::Integer, self.to_string().as_bytes())
+    impl Blot for $type {
+        fn blot<Hasher: Digest + Clone>(
+            &self,
+            hasher: Hasher,
+        ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+            primitive(hasher, Tag::Integer, self.to_string().as_bytes())
+        }
     }
-}
-
 });
 
 blot_integer!(u8);
