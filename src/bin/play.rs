@@ -97,5 +97,19 @@ fn main() -> std::io::Result<()> {
     // let blk = "b2404020fb5053ecefc742b73665625613de5ea09917988fac07d2977ece1c9bebb1aa0e5dfe8e3f2ae7b30ac3b97fac511a4745d71f5d4dbb211d69d06b34fb031e60";
     // let bytes = Vec::from_hex(blk).unwrap();
 
+    let mut n = 0xb240u64.to_be();
+    let mut vec = Vec::new();
+
+    while n > 0 {
+        let k = n & 0xFF;
+        if k != 0 {
+            vec.push(k);
+        }
+
+        n >>= 8;
+    }
+
+    println!("{:?}", &vec);
+
     Ok(())
 }

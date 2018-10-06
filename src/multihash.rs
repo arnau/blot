@@ -4,9 +4,11 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
+use uvar::Uvar;
+
 pub trait Multihash {
     fn length(&self) -> u8;
-    fn code(&self) -> u64; // uvar ranges from u8 to u64
+    fn code(&self) -> Uvar; // uvar ranges from u8 to u64
     fn name(&self) -> &str;
 }
 
@@ -15,14 +17,14 @@ pub trait Multihash {
 /// Convenience representation to move the tuple {name, code, length} around.
 #[derive(Clone)]
 pub struct Bag {
-    code: u64,
+    code: Uvar,
     name: &'static str,
     length: u8,
 }
 
 impl Multihash for Bag {
-    fn code(&self) -> u64 {
-        self.code
+    fn code(&self) -> Uvar {
+        self.code.clone()
     }
 
     fn name(&self) -> &str {
@@ -40,13 +42,14 @@ impl Multihash for Bag {
 ///
 /// ```
 /// use blot::multihash::Tag;
+/// use blot::uvar::Uvar;
 ///
 /// let name: &str = Tag::Sha3512.into();
-/// let code: u64 = Tag::Sha3512.into();
+/// let code: Uvar = Tag::Sha3512.into();
 /// let length: u8 = Tag::Sha3512.length();
 ///
 /// assert_eq!(name, "sha3-512");
-/// assert_eq!(code, 0x14);
+/// assert_eq!(code, Uvar::new(vec![0x14]));
 /// assert_eq!(length, 64);
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -91,19 +94,19 @@ impl From<u64> for Tag {
     }
 }
 
-impl From<Tag> for u64 {
-    fn from(hash: Tag) -> u64 {
+impl From<Tag> for Uvar {
+    fn from(hash: Tag) -> Uvar {
         match hash {
-            Tag::Sha1 => 0x11,
-            Tag::Sha2256 => 0x12,
-            Tag::Sha2512 => 0x13,
-            Tag::Sha3512 => 0x14,
-            Tag::Sha3384 => 0x15,
-            Tag::Sha3256 => 0x16,
-            Tag::Sha3224 => 0x17,
+            Tag::Sha1 => Uvar::new(vec![0x11]),
+            Tag::Sha2256 => Uvar::new(vec![0x12]),
+            Tag::Sha2512 => Uvar::new(vec![0x13]),
+            Tag::Sha3512 => Uvar::new(vec![0x14]),
+            Tag::Sha3384 => Uvar::new(vec![0x15]),
+            Tag::Sha3256 => Uvar::new(vec![0x16]),
+            Tag::Sha3224 => Uvar::new(vec![0x17]),
             // Tag::Blake2b256 => 0xb220,
-            Tag::Blake2b512 => 0xb240,
-            Tag::Blake2s256 => 0xb260,
+            Tag::Blake2b512 => Uvar::new(vec![0xb2, 0x40]),
+            Tag::Blake2s256 => Uvar::new(vec![0xb2, 0x60]),
         }
     }
 }
@@ -166,8 +169,8 @@ impl Tag {
         self.clone().into()
     }
 
-    pub fn code(&self) -> u64 {
-        u64::from(self.clone())
+    pub fn code(&self) -> Uvar {
+        Uvar::from(self.clone())
     }
 
     pub fn length(&self) -> u8 {

@@ -8,14 +8,22 @@
 //!
 //! https://github.com/multiformats/unsigned-varint
 
+use std::fmt;
+
 const MAXBYTES: usize = 9;
 
 // TODO: Internal representation is a vector for the time being. In the future it might change to
 // either u64 or an array.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Uvar(Vec<u8>);
 
 impl Uvar {
+    /// Constructs a new uvar from a byte list. Use {Uvar::from_bytes} if you need a safe
+    /// constructor.
+    pub fn new(bytes: Vec<u8>) -> Uvar {
+        Uvar(bytes)
+    }
+
     /// Consumes the list of bytes.
     ///
     /// ```
@@ -49,12 +57,7 @@ impl Uvar {
     /// assert_eq!(uvar, Uvar::from_bytes(&[0x12]).unwrap());
     /// ```
     pub fn take(buffer: &[u8]) -> Result<(Uvar, &[u8]), UvarError> {
-        let mut n = 0;
-
         for (i, b) in buffer.into_iter().enumerate() {
-            let k = u64::from(b & 0x7f);
-            n = n | k << (i * 7);
-
             if b & 0x80 == 0 {
                 let code = Uvar((&buffer[..i + 1]).into());
                 let rest = &buffer[i + 1..];
@@ -71,18 +74,58 @@ impl Uvar {
     }
 }
 
-// TODO: Review usefulness
-impl From<u64> for Uvar {
-    fn from(n: u64) -> Uvar {
-        let mut buffer = Vec::with_capacity(9);
-        let mut value = n;
+impl fmt::LowerHex for Uvar {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::LowerHex::fmt(&u64::from(self.clone()), f)
+    }
+}
 
-        while value > 0x7F {
-            buffer.push((value as u8) | 0x80);
-            value >>= 7;
+impl fmt::UpperHex for Uvar {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::UpperHex::fmt(&u64::from(self.clone()), f)
+    }
+}
+
+impl fmt::Binary for Uvar {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Binary::fmt(&u64::from(self.clone()), f)
+    }
+}
+
+impl fmt::Display for Uvar {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:02x}", &self)
+    }
+}
+
+impl From<Uvar> for u64 {
+    fn from(uvar: Uvar) -> u64 {
+        let mut n = 0;
+
+        for (i, b) in uvar.to_bytes().iter().enumerate() {
+            n = n << (i * 8) | u64::from(b & 0xFF);
         }
 
-        buffer.push(value as u8);
+        n
+    }
+}
+
+/// This conversion consumes full bytes, not 7bit bytes as you would expect from variable integers.
+///
+/// WARNING: This method forces to Big Endian. It hasn't been tested properly with different architectures.
+impl From<u64> for Uvar {
+    fn from(n: u64) -> Uvar {
+        let mut buffer = Vec::with_capacity(MAXBYTES);
+        let mut value = n.to_be();
+
+        while value > 0 {
+            let k = value & 0xFF;
+            if k != 0 {
+                buffer.push(k as u8);
+            }
+
+            value = value >> 8;
+        }
 
         Uvar(buffer)
     }
@@ -155,4 +198,25 @@ mod tests {
         let expected = &[0xb2, 0x40];
         assert_eq!(&actual, expected);
     }
+
+    #[test]
+    fn to_u64() {
+        for (buffer, expected) in &[(vec![0x12], 0x12), (vec![0xb2, 0x40], 0xb240)] {
+            let actual: u64 = Uvar::from_bytes(&buffer).unwrap().into();
+
+            assert_eq!(actual, *expected);
+        }
+    }
+
+    #[test]
+    fn from_u64() {
+        for (buffer, n) in &[(vec![0x12], 0x12), (vec![0xb2, 0x40], 0xb240)] {
+            let num: u64 = *n;
+            let expected = Uvar::from_bytes(&buffer).unwrap();
+            let actual: Uvar = num.into();
+
+            assert_eq!(actual, expected);
+        }
+    }
+
 }
