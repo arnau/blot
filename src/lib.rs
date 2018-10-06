@@ -8,12 +8,10 @@
 
 extern crate blake2;
 extern crate digest;
-extern crate sha2;
-extern crate sha3;
-#[macro_use]
-extern crate hex_literal;
 extern crate hex;
 extern crate serde_json;
+extern crate sha2;
+extern crate sha3;
 
 pub mod core;
 pub mod digester;

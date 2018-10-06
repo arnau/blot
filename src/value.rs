@@ -120,6 +120,7 @@ impl From<Vec<Value>> for Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use hex::FromHex;
 
     #[test]
     fn common() {
@@ -279,16 +280,18 @@ mod tests {
         let pairs = vec![
             (
                 Value::Redacted(
-                    hex!("454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1")
-                        .to_vec(),
+                    Vec::from_hex(
+                        "454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1",
+                    ).unwrap(),
                 ),
                 "1220454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1",
             ),
             (
                 Value::List(vec![
                     Value::Redacted(
-                        hex!("a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038")
-                            .to_vec(),
+                        Vec::from_hex(
+                            "a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038",
+                        ).unwrap(),
                     ),
                     "bar".into(),
                 ]),

@@ -408,6 +408,7 @@ pub fn float_normalize(mut f: f64) -> String {
 mod tests {
     use super::*;
     use digest::generic_array::typenum::U32;
+    use hex::FromHex;
 
     // Test helper
     fn hash2256_from_slice(slice: &[u8]) -> Hash<Sha2256> {
@@ -433,7 +434,8 @@ mod tests {
     #[test]
     fn bool_blot_raw() {
         let expected = hash2256_from_slice(
-            &hex!("7dc96f776c8423e57a2785489a3f9c43fb6e756876d6ad9a9cac4aa4e72ec193")[..],
+            &Vec::from_hex("7dc96f776c8423e57a2785489a3f9c43fb6e756876d6ad9a9cac4aa4e72ec193")
+                .unwrap(),
         );
         let actual = true.sha2256();
 
@@ -474,7 +476,9 @@ mod tests {
     #[test]
     fn raw_blot() {
         let expected = "1220e318859db4d2acc89c0d503ddbcf8331625125a79018d19cf8f8d1336b7eb39e";
-        let bytes = hex!("6b18693874513ba13da54d61aafa7cad0c8f5573f3431d6f1c04b07ddb27d6bb");
+        let bytes =
+            Vec::from_hex("6b18693874513ba13da54d61aafa7cad0c8f5573f3431d6f1c04b07ddb27d6bb")
+                .unwrap();
         let actual = format!("{}", (&bytes[..]).sha2256());
         assert_eq!(actual, expected);
     }
