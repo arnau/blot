@@ -5,8 +5,8 @@
 // according to those terms.
 
 use core::{collection, Blot, Output};
-use digest::generic_array::GenericArray;
 use digest::{Digest, FixedOutput};
+use seal::Seal;
 use std::collections::HashMap;
 use tag::Tag;
 
@@ -17,7 +17,7 @@ pub enum Value {
     Integer(i64),
     Float(f64),
     String(String),
-    Redacted(Vec<u8>),
+    Redacted(Seal),
     Raw(Vec<u8>),
     List(Vec<Value>),
     // HashSet require Hash trait which makes this recursive structure too complex for this
@@ -37,7 +37,7 @@ impl Blot for Value {
             Value::Integer(raw) => raw.blot(hasher.clone()),
             Value::Float(raw) => raw.blot(hasher.clone()),
             Value::String(raw) => raw.blot(hasher.clone()),
-            Value::Redacted(raw) => GenericArray::from_slice(raw).clone(),
+            Value::Redacted(raw) => raw.blot(hasher.clone()),
             Value::Raw(raw) => raw.as_slice().blot(hasher.clone()),
             Value::List(raw) => raw.blot(hasher.clone()),
             Value::Set(raw) => {
@@ -277,33 +277,24 @@ mod tests {
 
     #[test]
     fn redacted() {
-        let pairs = vec![
-            (
-                Value::Redacted(
-                    Vec::from_hex(
-                        "454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1",
-                    ).unwrap(),
-                ),
-                "1220454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1",
-            ),
-            (
-                Value::List(vec![
-                    Value::Redacted(
-                        Vec::from_hex(
-                            "a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038",
-                        ).unwrap(),
-                    ),
-                    "bar".into(),
-                ]),
-                "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2",
-            ),
-        ];
+        let expected = "1220454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1";
+        let seal = Seal::from_str(
+            "**REDACTED**1220454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1",
+        ).unwrap();
+        let value = Value::Redacted(seal);
+        let actual = format!("{}", &value.sha2256());
+        assert_eq!(&actual, expected);
+    }
 
-        for (value, expected) in pairs.iter() {
-            let actual = format!("{}", &value.sha2256());
-
-            assert_eq!(&actual, expected);
-        }
+    #[test]
+    fn redacted_mix() {
+        let expected = "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2";
+        let seal = Seal::from_str(
+            "**REDACTED**1220a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038",
+        ).unwrap();
+        let value = list![Value::Redacted(seal), "bar"];
+        let actual = format!("{}", &value.sha2256());
+        assert_eq!(&actual, expected);
     }
 
 }

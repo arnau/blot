@@ -94,19 +94,43 @@ impl From<u64> for Tag {
     }
 }
 
+#[derive(Debug)]
+pub enum TagError {
+    Unknown,
+}
+
+impl From<Uvar> for Result<Tag, TagError> {
+    fn from(code: Uvar) -> Result<Tag, TagError> {
+        let n: u64 = code.into();
+
+        match n {
+            0x11 => Ok(Tag::Sha1),
+            0x12 => Ok(Tag::Sha2256),
+            0x13 => Ok(Tag::Sha2512),
+            0x14 => Ok(Tag::Sha3512),
+            0x15 => Ok(Tag::Sha3384),
+            0x16 => Ok(Tag::Sha3256),
+            0x17 => Ok(Tag::Sha3224),
+            0xb240 => Ok(Tag::Blake2b512),
+            0xb260 => Ok(Tag::Blake2s256),
+            _ => Err(TagError::Unknown),
+        }
+    }
+}
+
 impl From<Tag> for Uvar {
     fn from(hash: Tag) -> Uvar {
         match hash {
-            Tag::Sha1 => Uvar::new(vec![0x11]),
-            Tag::Sha2256 => Uvar::new(vec![0x12]),
-            Tag::Sha2512 => Uvar::new(vec![0x13]),
-            Tag::Sha3512 => Uvar::new(vec![0x14]),
-            Tag::Sha3384 => Uvar::new(vec![0x15]),
-            Tag::Sha3256 => Uvar::new(vec![0x16]),
-            Tag::Sha3224 => Uvar::new(vec![0x17]),
+            Tag::Sha1 => 0x11.into(),
+            Tag::Sha2256 => 0x12.into(),
+            Tag::Sha2512 => 0x13.into(),
+            Tag::Sha3512 => 0x14.into(),
+            Tag::Sha3384 => 0x15.into(),
+            Tag::Sha3256 => 0x16.into(),
+            Tag::Sha3224 => 0x17.into(),
             // Tag::Blake2b256 => 0xb220,
-            Tag::Blake2b512 => Uvar::new(vec![0xb2, 0x40]),
-            Tag::Blake2s256 => Uvar::new(vec![0xb2, 0x60]),
+            Tag::Blake2b512 => 0xb240.into(),
+            Tag::Blake2s256 => 0xb260.into(),
         }
     }
 }
