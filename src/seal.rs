@@ -4,6 +4,10 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
+//! Sealed digest multihash.
+//!
+//! Type [`Seal`] represents a sealed digest multihash.
+
 use core::{Blot, Output};
 use digest::generic_array::GenericArray;
 use digest::{Digest, FixedOutput};
@@ -39,9 +43,10 @@ impl From<FromHexError> for SealError {
     }
 }
 
-/// 0x77 is equivalent to the original "**REDACTED**" mark.
+/// 0x77 is equivalent to the original `**REDACTED**` mark.
 pub const SEAL_MARK: u8 = 0x77;
 
+/// The `Seal` type. See [the module level documentation](index.html) for more.
 #[derive(Debug, PartialEq)]
 pub struct Seal {
     tag: Tag,
@@ -49,6 +54,14 @@ pub struct Seal {
 }
 
 impl Seal {
+    pub fn digest(&self) -> &[u8] {
+        &self.digest
+    }
+
+    pub fn tag(&self) -> &Tag {
+        &self.tag
+    }
+
     pub fn digest_hex(&self) -> String {
         let mut result = String::new();
 
