@@ -4,7 +4,7 @@
 // This file may not be copied, modified, or distributed except
 // according to those terms.
 
-use core::{primitive, collection, Blot, Output};
+use core::{collection, primitive, Blot, Output};
 use digest::{Digest, FixedOutput};
 use seal::Seal;
 use std::collections::HashMap;
@@ -38,9 +38,7 @@ impl Blot for Value {
             Value::Integer(raw) => raw.blot(hasher.clone()),
             Value::Float(raw) => raw.blot(hasher.clone()),
             Value::String(raw) => raw.blot(hasher.clone()),
-            Value::Timestamp(raw) => {
-                primitive(hasher.clone(), Tag::Timestamp, raw.as_bytes())
-            }
+            Value::Timestamp(raw) => primitive(hasher.clone(), Tag::Timestamp, raw.as_bytes()),
             Value::Redacted(raw) => raw.blot(hasher.clone()),
             Value::Raw(raw) => raw.as_slice().blot(hasher.clone()),
             Value::List(raw) => raw.blot(hasher.clone()),
@@ -80,11 +78,9 @@ macro_rules! set {
 
 #[macro_export]
 macro_rules! raw {
-    ($input:expr) => {
-        {
-            Vec::from_hex($input).map(|hash| Value::Raw(hash))
-        }
-    };
+    ($input:expr) => {{
+        Vec::from_hex($input).map(|hash| Value::Raw(hash))
+    }};
 }
 
 #[macro_export]
@@ -127,6 +123,12 @@ impl From<f64> for Value {
 impl From<Vec<Value>> for Value {
     fn from(raw: Vec<Value>) -> Value {
         Value::List(raw)
+    }
+}
+
+impl From<Seal> for Value {
+    fn from(raw: Seal) -> Value {
+        Value::Redacted(raw)
     }
 }
 
@@ -300,13 +302,12 @@ mod tests {
 
     #[test]
     fn redacted_mix() {
-        let expected = "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2";
-        let seal = Seal::from_str(
+        let expected = list!["foo", "bar"].sha2256();
+        let foo = Seal::from_str(
             "**REDACTED**1220a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038",
         ).unwrap();
-        let value = list![Value::Redacted(seal), "bar"];
-        let actual = format!("{}", &value.sha2256());
-        assert_eq!(&actual, expected);
+        let actual = list![foo, "bar"].sha2256();
+        assert_eq!(actual.to_string(), expected.to_string());
     }
 
 }
