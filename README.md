@@ -8,6 +8,8 @@ with [Multihash](https://github.com/multiformats/multihash).
 ## TODO
 
 * serde_json -> blot Value
+* specialise Value over Multihash? This should help enforce consistency with
+  redacted values.
 * bloton! (akin to js!)
 * serde_json + schema (or Set flag) -> blot Value
 * CLI

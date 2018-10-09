@@ -16,6 +16,7 @@ pub enum Tag {
     Null = 0x6E,
     Raw = 0x72,
     Set = 0x73,
+    Timestamp = 0x74,
     Unicode = 0x75,
 }
 

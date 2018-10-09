@@ -4,7 +4,7 @@
 // This file may not be copied, modified, or distributed except
 // according to those terms.
 
-use core::{collection, Blot, Output};
+use core::{primitive, collection, Blot, Output};
 use digest::{Digest, FixedOutput};
 use seal::Seal;
 use std::collections::HashMap;
@@ -17,6 +17,7 @@ pub enum Value {
     Integer(i64),
     Float(f64),
     String(String),
+    Timestamp(String),
     Redacted(Seal),
     Raw(Vec<u8>),
     List(Vec<Value>),
@@ -37,6 +38,9 @@ impl Blot for Value {
             Value::Integer(raw) => raw.blot(hasher.clone()),
             Value::Float(raw) => raw.blot(hasher.clone()),
             Value::String(raw) => raw.blot(hasher.clone()),
+            Value::Timestamp(raw) => {
+                primitive(hasher.clone(), Tag::Timestamp, raw.as_bytes())
+            }
             Value::Redacted(raw) => raw.blot(hasher.clone()),
             Value::Raw(raw) => raw.as_slice().blot(hasher.clone()),
             Value::List(raw) => raw.blot(hasher.clone()),
@@ -70,6 +74,15 @@ macro_rules! set {
                 temp_vec.push($x.into());
             )*
             Value::Set(temp_vec)
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! raw {
+    ($input:expr) => {
+        {
+            Vec::from_hex($input).map(|hash| Value::Raw(hash))
         }
     };
 }
@@ -120,7 +133,6 @@ impl From<Vec<Value>> for Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hex::FromHex;
 
     #[test]
     fn common() {
