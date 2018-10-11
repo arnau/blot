@@ -47,7 +47,7 @@ impl From<FromHexError> for SealError {
 pub const SEAL_MARK: u8 = 0x77;
 
 /// The `Seal` type. See [the module level documentation](index.html) for more.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Seal {
     tag: Tag,
     digest: Vec<u8>,

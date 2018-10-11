@@ -4,13 +4,29 @@
 // This file may not be copied, modified, or distributed except
 // according to those terms.
 
+use std::fmt::{self, Display};
+
 use core::{collection, primitive, Blot, Output};
 use digest::{Digest, FixedOutput};
 use seal::Seal;
 use std::collections::HashMap;
 use tag::Tag;
 
-#[derive(Debug, PartialEq)]
+pub mod de;
+
+// TODO: Hack to generate a value with all sequences as sets instead of lists.
+//
+// See `de.rs` for more details.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ValueSet(Value);
+
+impl ValueSet {
+    pub fn to_value(self) -> Value {
+        self.0
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     Null,
     Bool(bool),
@@ -25,6 +41,17 @@ pub enum Value {
     // exercise
     Set(Vec<Value>),
     Dict(HashMap<String, Value>),
+}
+
+#[derive(Debug)]
+pub enum ValueError {
+    Unknown,
+}
+
+impl Display for ValueError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "{:?}", self)
+    }
 }
 
 impl Blot for Value {

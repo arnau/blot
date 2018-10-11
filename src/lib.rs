@@ -6,10 +6,17 @@
 
 //! Blot library
 
+// #[macro_use]
+// extern crate lazy_static;
+
+extern crate hex;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
+
 extern crate blake2;
 extern crate digest;
-extern crate hex;
-extern crate serde_json;
 extern crate sha2;
 extern crate sha3;
 
