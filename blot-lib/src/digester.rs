@@ -10,6 +10,9 @@ use blake2;
 use sha2;
 use sha3;
 
+// SHA1
+pub use sha1::Sha1;
+
 // SHA2
 pub type Sha2512 = sha2::Sha512;
 pub type Sha2256 = sha2::Sha256;

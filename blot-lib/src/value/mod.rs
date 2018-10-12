@@ -55,7 +55,7 @@ impl Display for ValueError {
 }
 
 impl Blot for Value {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {

@@ -17,6 +17,7 @@ extern crate serde_json;
 
 extern crate blake2;
 extern crate digest;
+extern crate sha1;
 extern crate sha2;
 extern crate sha3;
 

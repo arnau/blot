@@ -27,7 +27,7 @@ use serde_json::{Map, Number, Value};
 use tag::Tag;
 
 impl Blot for Map<String, Value> {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -61,7 +61,7 @@ impl Blot for Number {
 
 #[cfg(not(feature = "common_json"))]
 impl Blot for Number {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -82,7 +82,7 @@ impl Blot for Number {
 }
 
 impl Blot for Value {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {

@@ -5,10 +5,13 @@
 // those terms.
 
 use digest::generic_array::GenericArray;
-use digest::Digest;
+pub use digest::Digest;
 use digest::FixedOutput;
-use digester::{Blake2b512, Blake2s256, Sha2256, Sha2512, Sha3224, Sha3256, Sha3384, Sha3512};
+use digester::{
+    Blake2b512, Blake2s256, Sha1, Sha2256, Sha2512, Sha3224, Sha3256, Sha3384, Sha3512,
+};
 use multihash;
+use multihash::Multihash;
 use std;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt;
@@ -17,12 +20,12 @@ use tag::Tag;
 pub type Output<T> = GenericArray<u8, T>;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Hash<T: Digest> {
+pub struct Hash<T: Digest + FixedOutput> {
     tag: multihash::Tag,
     digest: Option<Output<<T as FixedOutput>::OutputSize>>,
 }
 
-impl<Hasher: Digest> Hash<Hasher> {
+impl<Hasher: Digest + FixedOutput> Hash<Hasher> {
     pub fn tag(&self) -> &multihash::Tag {
         &self.tag
     }
@@ -32,7 +35,7 @@ impl<Hasher: Digest> Hash<Hasher> {
     }
 }
 
-impl<T: Digest> fmt::Display for Hash<T> {
+impl<T: Digest + FixedOutput> fmt::Display for Hash<T> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match &self.digest {
             None => Err(fmt::Error),
@@ -51,7 +54,52 @@ impl<T: Digest> fmt::Display for Hash<T> {
 
 // TODO: Explore a way to use Multihash instead of Digest and Tag
 pub trait Blot {
-    fn blot<Hasher: Digest + Clone>(&self, Hasher) -> Output<<Hasher as FixedOutput>::OutputSize>;
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
+        &self,
+        Hasher,
+    ) -> Output<<Hasher as FixedOutput>::OutputSize>;
+
+    fn foo(&self, tag: multihash::Tag) -> multihash::Digest {
+        let digest = match tag {
+            multihash::Tag::Sha1 => {
+                let hash = self.blot(Sha1::default());
+                hash.as_slice().to_vec()
+            }
+            multihash::Tag::Sha2256 => {
+                let hash = self.blot(Sha2256::default());
+                hash.as_slice().to_vec()
+            }
+            multihash::Tag::Sha2512 => {
+                let hash = self.blot(Sha2512::default());
+                hash.as_slice().to_vec()
+            }
+            multihash::Tag::Sha3512 => {
+                let hash = self.blot(Sha3512::default());
+                hash.as_slice().to_vec()
+            }
+            multihash::Tag::Sha3384 => {
+                let hash = self.blot(Sha3384::default());
+                hash.as_slice().to_vec()
+            }
+            multihash::Tag::Sha3256 => {
+                let hash = self.blot(Sha3256::default());
+                hash.as_slice().to_vec()
+            }
+            multihash::Tag::Sha3224 => {
+                let hash = self.blot(Sha3224::default());
+                hash.as_slice().to_vec()
+            }
+            multihash::Tag::Blake2b512 => {
+                let hash = self.blot(Blake2b512::default());
+                hash.as_slice().to_vec()
+            }
+            multihash::Tag::Blake2s256 => {
+                let hash = self.blot(Blake2s256::default());
+                hash.as_slice().to_vec()
+            }
+        };
+        multihash::Digest::new(tag, digest)
+    }
 
     fn sha2256(&self) -> Hash<Sha2256> {
         let output = self.blot(Sha2256::default());
@@ -129,7 +177,7 @@ pub trait Blot {
 ///
 /// core::primitive(Sha2256::default(), Tag::Unicode, "foo".as_bytes());
 /// ```
-pub fn primitive<Hasher: Digest>(
+pub fn primitive<Hasher: Digest + FixedOutput>(
     mut hasher: Hasher,
     tag: Tag,
     bytes: &[u8],
@@ -156,7 +204,7 @@ pub fn collection<Hasher: Digest + FixedOutput>(
 
 impl<'a, T: ?Sized + Blot> Blot for &'a T {
     #[inline]
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -165,7 +213,7 @@ impl<'a, T: ?Sized + Blot> Blot for &'a T {
 }
 
 impl Blot for str {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -174,7 +222,7 @@ impl Blot for str {
 }
 
 impl Blot for String {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -183,7 +231,7 @@ impl Blot for String {
 }
 
 impl Blot for [u8] {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -192,7 +240,7 @@ impl Blot for [u8] {
 }
 
 impl<'a, T: Blot> Blot for Option<T> {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -204,7 +252,7 @@ impl<'a, T: Blot> Blot for Option<T> {
 }
 
 impl<'a> Blot for bool {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -215,7 +263,7 @@ impl<'a> Blot for bool {
 
 macro_rules! blot_integer (($type:ident) => {
     impl Blot for $type {
-        fn blot<Hasher: Digest + Clone>(
+        fn blot<Hasher: Digest + FixedOutput + Clone>(
             &self,
             hasher: Hasher,
         ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -236,7 +284,7 @@ blot_integer!(i64);
 blot_integer!(isize);
 
 impl<T: Blot> Blot for Vec<T> {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -252,7 +300,7 @@ impl<T: Blot> Blot for Vec<T> {
 }
 
 impl<T: Blot + Eq + std::hash::Hash> Blot for HashSet<T> {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -277,7 +325,7 @@ where
     K: Blot + Eq + std::hash::Hash,
     V: Blot + PartialEq,
 {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -302,7 +350,7 @@ where
     K: Blot + Eq + std::hash::Hash,
     V: Blot + PartialEq,
 {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -323,7 +371,7 @@ where
 }
 
 impl Blot for f32 {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {
@@ -332,7 +380,7 @@ impl Blot for f32 {
 }
 
 impl Blot for f64 {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + FixedOutput + Clone>(
         &self,
         hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {

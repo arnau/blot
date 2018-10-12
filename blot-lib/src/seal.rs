@@ -12,7 +12,7 @@ use core::{Blot, Output};
 use digest::generic_array::GenericArray;
 use digest::{Digest, FixedOutput};
 use hex::{FromHex, FromHexError};
-use multihash::{Tag, TagError};
+use multihash::{Multihash, Tag, TagError};
 use uvar::{Uvar, UvarError};
 
 #[derive(Debug)]
@@ -169,7 +169,7 @@ impl Seal {
 }
 
 impl Blot for Seal {
-    fn blot<Hasher: Digest + Clone>(
+    fn blot<Hasher: Digest + Clone + FixedOutput>(
         &self,
         _hasher: Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize> {

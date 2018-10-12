@@ -4,7 +4,38 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
+use std::str::FromStr;
 use uvar::Uvar;
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Digest {
+    tag: Tag,
+    digest: Vec<u8>,
+}
+
+impl Digest {
+    pub fn new(tag: Tag, digest: Vec<u8>) -> Digest {
+        Digest { tag, digest }
+    }
+
+    pub fn digest(&self) -> &[u8] {
+        &self.digest
+    }
+
+    pub fn tag(&self) -> &Tag {
+        &self.tag
+    }
+
+    pub fn digest_hex(&self) -> String {
+        let mut result = String::new();
+
+        for byte in &self.digest {
+            result.push_str(&format!("{:02x}", byte));
+        }
+
+        result
+    }
+}
 
 pub trait Multihash {
     fn length(&self) -> u8;
@@ -41,7 +72,7 @@ impl Multihash for Bag {
 /// For example, the SHA3-512 tag is:
 ///
 /// ```
-/// use blot::multihash::Tag;
+/// use blot::multihash::{Tag, Multihash};
 /// use blot::uvar::Uvar;
 ///
 /// let name: &str = Tag::Sha3512.into();
@@ -159,7 +190,6 @@ impl<'a> From<Tag> for &'a str {
     }
 }
 
-// TODO: Use FromStr instead
 impl<'a> From<&'a str> for Tag {
     fn from(name: &str) -> Tag {
         match name {
@@ -178,6 +208,25 @@ impl<'a> From<&'a str> for Tag {
     }
 }
 
+impl FromStr for Tag {
+    type Err = TagError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "sha1" => Ok(Tag::Sha1),
+            "sha2-256" => Ok(Tag::Sha2256),
+            "sha2-512" => Ok(Tag::Sha2512),
+            "sha3-512" => Ok(Tag::Sha3512),
+            "sha3-384" => Ok(Tag::Sha3384),
+            "sha3-256" => Ok(Tag::Sha3256),
+            "sha3-224" => Ok(Tag::Sha3224),
+            "blake2b-512" => Ok(Tag::Blake2b512),
+            "blake2s-256" => Ok(Tag::Blake2s256),
+            _ => Err(TagError::Unknown),
+        }
+    }
+}
+
 impl From<Tag> for Bag {
     fn from(hash: Tag) -> Bag {
         Bag {
@@ -188,16 +237,16 @@ impl From<Tag> for Bag {
     }
 }
 
-impl Tag {
-    pub fn name(&self) -> &str {
+impl Multihash for Tag {
+    fn name(&self) -> &str {
         self.clone().into()
     }
 
-    pub fn code(&self) -> Uvar {
+    fn code(&self) -> Uvar {
         Uvar::from(self.clone())
     }
 
-    pub fn length(&self) -> u8 {
+    fn length(&self) -> u8 {
         match self {
             Tag::Sha1 => 20,
             Tag::Sha2256 => 32,
@@ -206,7 +255,6 @@ impl Tag {
             Tag::Sha3384 => 48,
             Tag::Sha3256 => 32,
             Tag::Sha3224 => 28,
-            // Tag::Blake2b256 => 32,
             Tag::Blake2b512 => 64,
             Tag::Blake2s256 => 32,
         }
