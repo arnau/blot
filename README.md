@@ -30,7 +30,8 @@ Multihash:
 Custom:
 
 * [x] Redacted values with `0x77`.
-* [ ] Timestamp tagged type.
+* [x] Timestamp tagged type. Note that detection is very rough and it will not
+  guarantee a valid time.
 
 
 ## Usage

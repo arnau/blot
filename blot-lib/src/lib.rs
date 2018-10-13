@@ -7,6 +7,9 @@
 //! Blot library
 
 extern crate hex;
+#[macro_use]
+extern crate lazy_static;
+extern crate regex;
 extern crate serde;
 extern crate serde_json;
 

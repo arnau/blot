@@ -5,6 +5,7 @@
 // according to those terms.
 
 use hex::FromHex;
+use regex::Regex;
 use seal::Seal;
 use serde::de::{self, Deserialize, Deserializer, MapAccess, SeqAccess, Visitor};
 use std::collections::HashMap;
@@ -78,6 +79,15 @@ impl<'de> Visitor<'de> for ValueVisitor {
 
         if let Ok(raw) = Vec::from_hex(value) {
             return Ok(Value::Raw(raw));
+        }
+
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z")
+                .expect("Regex to compile");
+        }
+
+        if RE.is_match(value) {
+            return Ok(Value::Timestamp(value.into()));
         }
 
         self.visit_string(value.into())
@@ -216,6 +226,15 @@ mod tests {
         let input = r#"[1, 2]"#;
         let expected = r#"Ok(ValueSet(Set([Integer(1), Integer(2)])))"#;
         let res = serde_json::from_str::<ValueSet>(input);
+
+        assert_eq!(format!("{:?}", res), expected);
+    }
+
+    #[test]
+    fn timestamp_value() {
+        let input = r#""2018-10-13T15:50:00Z""#;
+        let expected = r#"Ok(Timestamp("2018-10-13T15:50:00Z"))"#;
+        let res = serde_json::from_str::<Value>(input);
 
         assert_eq!(format!("{:?}", res), expected);
     }
