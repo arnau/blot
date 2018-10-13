@@ -9,6 +9,7 @@ objecthash](https://github.com/benlaurie/objecthash) combined with
 
 Licensed under MIT (See [LICENSE](./LICENSE)).
 
+
 ## Usage
 
 Compact output:
@@ -32,6 +33,11 @@ $ blot -a blake2b-512 --verbose '"foo"'
 <span style="background-color: #00afff">Length:</span> 0x40
 <span style="background-color: #ffd75f">Digest:</span> 0x20fb5053ecefc742b73665625613de5ea09917988fac07d2977ece1c9bebb1aa0e5dfe8e3f2ae7b30ac3b97fac511a4745d71f5d4dbb211d69d06b34fb031e60
 </pre>
+
+
+## See also
+
+* [blot library](blot-lib)
 
 ## TODO
 
