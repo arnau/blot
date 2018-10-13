@@ -14,7 +14,6 @@ use ansi_term::Colour::{Black, Fixed};
 use blot::core::Blot;
 use blot::multihash::{Hash, Multihash, Tag};
 use blot::value::Value;
-use std::process;
 
 use clap::{App, Arg};
 
