@@ -6,11 +6,13 @@
 
 #[macro_use]
 extern crate clap;
+extern crate ansi_term;
 extern crate blot;
 extern crate serde_json;
 
+use ansi_term::Colour::{Black, Fixed};
 use blot::core::Blot;
-use blot::multihash::Tag;
+use blot::multihash::{Hash, Multihash, Tag};
 use blot::value::Value;
 use std::process;
 
@@ -60,5 +62,34 @@ For example, "foo", {"foo": "bar"}, [1, "foo"]
     let value: Value = serde_json::from_str(&input).unwrap();
     let hash = value.foo(alg);
 
-    println!("{:#}", &hash);
+    if matches.is_present("verbose") {
+        display_verbose(&hash);
+    } else {
+        display(&hash);
+    }
+}
+
+fn display(hash: &Hash) {
+    let code = format!("{:02x}", &hash.tag().code());
+    let length = format!("{:02x}", &hash.tag().length());
+    let digest = format!("{}", &hash.digest());
+
+    print!("{}", Black.on(Fixed(198)).paint(code));
+    print!("{}", Black.on(Fixed(39)).paint(length));
+    println!("{}", Fixed(221).on(Black).paint(digest));
+}
+
+fn display_verbose(hash: &Hash) {
+    let code = format!("{:#02x}", &hash.tag().code());
+    let length = format!("{:#02x}", &hash.tag().length());
+    let digest = format!("0x{}", &hash.digest());
+
+    println!("Name:");
+    println!("  {}", Black.on(Fixed(255)).paint(hash.tag().name()));
+    println!("\nCodec:");
+    println!("  {}", Black.on(Fixed(198)).paint(code));
+    println!("\nLength:");
+    println!("  {}", Black.on(Fixed(39)).paint(length));
+    println!("\nDigest:");
+    println!("  {}", Fixed(221).on(Black).paint(digest));
 }

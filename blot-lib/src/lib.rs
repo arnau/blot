@@ -6,7 +6,6 @@
 
 //! Blot library
 
-extern crate ansi_term;
 extern crate hex;
 extern crate serde;
 extern crate serde_json;

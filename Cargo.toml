@@ -16,3 +16,4 @@ blot-lib = { path = "blot-lib" }
 clap = "2.32.0"
 serde = "1.0"
 serde_json = "1.0"
+ansi_term = "0.11"
