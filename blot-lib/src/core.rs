@@ -59,7 +59,7 @@ pub trait Blot {
         Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize>;
 
-    fn foo(&self, tag: multihash::Tag) -> multihash::Digest {
+    fn foo(&self, tag: multihash::Tag) -> multihash::Hash {
         let digest = match tag {
             multihash::Tag::Sha1 => {
                 let hash = self.blot(Sha1::default());
@@ -98,7 +98,7 @@ pub trait Blot {
                 hash.as_slice().to_vec()
             }
         };
-        multihash::Digest::new(tag, digest)
+        multihash::Hash::new(tag, digest)
     }
 
     fn sha2256(&self) -> Hash<Sha2256> {

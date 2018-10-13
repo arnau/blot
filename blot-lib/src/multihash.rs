@@ -4,36 +4,76 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
+use ansi_term::Colour::{Black, Fixed};
+use std::fmt;
 use std::str::FromStr;
 use uvar::Uvar;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Digest {
-    tag: Tag,
-    digest: Vec<u8>,
+pub struct Digest(Vec<u8>);
+
+impl fmt::Display for Digest {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        for byte in &self.0 {
+            write!(formatter, "{:02x}", byte)?;
+        }
+
+        Ok(())
+    }
 }
 
 impl Digest {
-    pub fn new(tag: Tag, digest: Vec<u8>) -> Digest {
-        Digest { tag, digest }
+    pub fn as_slice(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<Vec<u8>> for Digest {
+    fn from(vec: Vec<u8>) -> Digest {
+        Digest(vec)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Hash {
+    tag: Tag,
+    digest: Digest,
+}
+
+impl Hash {
+    pub fn new<T: Into<Digest>>(tag: Tag, digest: T) -> Hash {
+        Hash {
+            tag,
+            digest: digest.into(),
+        }
     }
 
     pub fn digest(&self) -> &[u8] {
-        &self.digest
+        &self.digest.as_slice()
     }
 
     pub fn tag(&self) -> &Tag {
         &self.tag
     }
+}
 
-    pub fn digest_hex(&self) -> String {
-        let mut result = String::new();
+impl fmt::Display for Hash {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        if formatter.alternate() {
+            let code = format!("{:02x}", &self.tag.code());
+            let length = format!("{:02x}", &self.tag.length());
+            let digest = format!("{}", &self.digest);
 
-        for byte in &self.digest {
-            result.push_str(&format!("{:02x}", byte));
+            write!(formatter, "{}", Black.on(Fixed(198)).paint(code))?;
+            write!(formatter, "{}", Black.on(Fixed(39)).paint(length))?;
+            write!(formatter, "{}", Fixed(221).on(Black).paint(digest))?;
+        } else {
+            write!(formatter, "{:02x}", &self.tag.code())?;
+            write!(formatter, "{:02x}", &self.tag.length())?;
+            write!(formatter, "{}", &self.digest)?;
         }
 
-        result
+        Ok(())
     }
 }
 
