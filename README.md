@@ -9,6 +9,29 @@ objecthash](https://github.com/benlaurie/objecthash) combined with
 
 Licensed under MIT (See [LICENSE](./LICENSE)).
 
+## Features
+
+Objecthash:
+
+* [x] Tagged types: bool, dict, float, integer, list, null, raw, set, unicode.
+* [x] Redacted values with `**REDACTED**`.
+* [x] Common JSON (only when compiled with the `common_json` feature flag).
+
+Multihash:
+
+* Hashing algorithms:
+  * [x] sha1
+  * [x] sha2
+  * [x] sha3
+  * blake2
+    * [x] Maximum length (blake2b-512, blake2s-256)
+    * [ ] Partial length.
+
+Custom:
+
+* [x] Redacted values with `0x77`.
+* [ ] Timestamp tagged type.
+
 
 ## Usage
 
@@ -50,8 +73,6 @@ blot --sequence=set -a sha3-256 '["7716209dec0a5fc4b58a6d2a89c248c8ac845fc2a42ec
 * specialise Value over Multihash? This should help enforce consistency with
   redacted values.
 * bloton! (akin to js!)
-* serde_json + schema (or Set flag) -> blot Value
-* CLI
 
 ### Blot Notation
 
