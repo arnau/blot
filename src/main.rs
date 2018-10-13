@@ -79,16 +79,20 @@ fn display(hash: &Hash) {
 }
 
 fn display_verbose(hash: &Hash) {
-    let code = format!("{:#02x}", &hash.tag().code());
-    let length = format!("{:#02x}", &hash.tag().length());
-    let digest = format!("0x{}", &hash.digest());
-
-    println!("Name:");
-    println!("  {}", Black.on(Fixed(255)).paint(hash.tag().name()));
-    println!("\nCodec:");
-    println!("  {}", Black.on(Fixed(198)).paint(code));
-    println!("\nLength:");
-    println!("  {}", Black.on(Fixed(39)).paint(length));
-    println!("\nDigest:");
-    println!("  {}", Fixed(221).on(Black).paint(digest));
+    println!(
+        "{} {:#02x} ({})",
+        Black.on(Fixed(198)).paint("Codec: "),
+        &hash.tag().code(),
+        hash.tag().name()
+    );
+    println!(
+        "{} {:#02x}",
+        Black.on(Fixed(39)).paint("Length:"),
+        &hash.tag().length()
+    );
+    println!(
+        "{} 0x{}",
+        Black.on(Fixed(221)).paint("Digest:"),
+        &hash.digest()
+    );
 }
