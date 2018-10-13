@@ -13,7 +13,7 @@ extern crate serde_json;
 use ansi_term::Colour::{Black, Fixed};
 use blot::core::Blot;
 use blot::multihash::{Hash, Multihash, Tag};
-use blot::value::Value;
+use blot::value::{Value, ValueSet};
 
 use clap::{App, Arg};
 
@@ -49,6 +49,13 @@ For example, "foo", {"foo": "bar"}, [1, "foo"]
                     "blake2b-512",
                     "blake2s-256",
                 ]),
+        ).arg(Arg::with_name("sequence")
+              .help("Sequence mode. JSON")
+              .long_help("JSON only has arrays but Blot has lists and sets where the former is hashed as is and the latter disregards the order of the items and ensures there are no duplicates.")
+              .long("sequence")
+              .takes_value(true)
+              .default_value("list")
+              .possible_values(&["list", "set"])
         ).arg(
             Arg::with_name("verbose")
                 .help("Verbose mode")
@@ -57,8 +64,13 @@ For example, "foo", {"foo": "bar"}, [1, "foo"]
 
     let alg = value_t!(matches, "algorithm", Tag).unwrap_or_else(|e| e.exit());
     let input = matches.value_of("input").unwrap();
+    let seq_mode = matches.value_of("sequence").unwrap();
 
-    let value: Value = serde_json::from_str(&input).unwrap();
+    let value = match seq_mode {
+        "list" => serde_json::from_str::<Value>(&input).unwrap(),
+        "set" => serde_json::from_str::<ValueSet>(&input).unwrap().to_value(),
+        _ => unreachable!(),
+    };
     let hash = value.foo(alg);
 
     if matches.is_present("verbose") {

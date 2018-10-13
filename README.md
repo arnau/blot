@@ -34,6 +34,12 @@ $ blot -a blake2b-512 --verbose '"foo"'
 <span style="background-color: #ffd75f">Digest:</span> 0x20fb5053ecefc742b73665625613de5ea09917988fac07d2977ece1c9bebb1aa0e5dfe8e3f2ae7b30ac3b97fac511a4745d71f5d4dbb211d69d06b34fb031e60
 </pre>
 
+Sequences as sets instead of lists:
+
+```
+blot --sequence=set -a sha3-256 '["7716209dec0a5fc4b58a6d2a89c248c8ac845fc2a42ec440ec72f5f1554d3b9507689d", "bar"]'`
+1620e689a806ca38fb367f300a83022aa9f1c1ad74fd6f50038f3cb5d253e7cb17c6
+```
 
 ## See also
 
@@ -46,34 +52,6 @@ $ blot -a blake2b-512 --verbose '"foo"'
 * bloton! (akin to js!)
 * serde_json + schema (or Set flag) -> blot Value
 * CLI
-
-
-## Sketch
-
-Hash a json blob:
-
-```
-$ blot -a sha2256 '["foo", "bar"]'
-122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2
-```
-
-Hash a json blob where all arrays are sets:
-
-```
-$ blot -a sha2256 --list=set '["foo", "bar"]'
-12201d572df95be4d038068133b6a162cbe2172f15bc7d8a020faca7a9a93e8a2649
-```
-
-```
-$ blot -a sha2256 --list=set '["foo", "bar", "foo"]'
-12201d572df95be4d038068133b6a162cbe2172f15bc7d8a020faca7a9a93e8a2649
-```
-
-```
-$ blot -a sha2256 --list=list '["foo", "bar", "foo"]'
-122026965c7662c672319dfd88cf23c55932633c9d175f4f0e7a3b2fa5bf789fe82b
-```
-
 
 ### Blot Notation
 
