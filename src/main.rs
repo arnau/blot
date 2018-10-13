@@ -57,10 +57,8 @@ For example, "foo", {"foo": "bar"}, [1, "foo"]
     let alg = value_t!(matches, "algorithm", Tag).unwrap_or_else(|e| e.exit());
     let input = matches.value_of("input").unwrap();
 
-    println!("{:?}", alg);
-
     let value: Value = serde_json::from_str(&input).unwrap();
     let hash = value.foo(alg);
 
-    println!("{:?}", &hash);
+    println!("{:#}", &hash);
 }

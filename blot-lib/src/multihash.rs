@@ -4,7 +4,6 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
-use ansi_term::Colour::{Black, Fixed};
 use std::fmt;
 use std::str::FromStr;
 use uvar::Uvar;
@@ -48,8 +47,8 @@ impl Hash {
         }
     }
 
-    pub fn digest(&self) -> &[u8] {
-        &self.digest.as_slice()
+    pub fn digest(&self) -> &Digest {
+        &self.digest
     }
 
     pub fn tag(&self) -> &Tag {
@@ -59,19 +58,9 @@ impl Hash {
 
 impl fmt::Display for Hash {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        if formatter.alternate() {
-            let code = format!("{:02x}", &self.tag.code());
-            let length = format!("{:02x}", &self.tag.length());
-            let digest = format!("{}", &self.digest);
-
-            write!(formatter, "{}", Black.on(Fixed(198)).paint(code))?;
-            write!(formatter, "{}", Black.on(Fixed(39)).paint(length))?;
-            write!(formatter, "{}", Fixed(221).on(Black).paint(digest))?;
-        } else {
-            write!(formatter, "{:02x}", &self.tag.code())?;
-            write!(formatter, "{:02x}", &self.tag.length())?;
-            write!(formatter, "{}", &self.digest)?;
-        }
+        write!(formatter, "{:02x}", &self.tag.code())?;
+        write!(formatter, "{:02x}", &self.tag.length())?;
+        write!(formatter, "{}", &self.digest)?;
 
         Ok(())
     }
