@@ -1,10 +1,35 @@
 # Blot
 
-**Blot** is a variation of [Ben Laurie's
-objecthash](https://github.com/benlaurie/objecthash) written in Rust combined
-with [Multihash](https://github.com/multiformats/multihash).
+**Blot** is a command-line interface (CLI) to compute hashes similar to tools
+like `shasum` but using a variation of [Ben Laurie's
+objecthash](https://github.com/benlaurie/objecthash) combined with
+[Multihash](https://github.com/multiformats/multihash).
 
 Licensed under MIT (See [LICENSE](./LICENSE)).
+
+## Usage
+
+Compact output:
+
+```
+$ blot -a sha2-256 '["foo", "bar"]'
+```
+
+<pre style="background-color: #000; font-family: monospace; color: #fff">
+<span style="background-color: #ff0087">12</span><span style="background-color: #00afff">20</span><span style="color: #ffd75f">32ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2</span>
+</pre>
+
+Verbose output:
+
+```
+$ blot -a blake2b-512 --verbose '"foo"'
+```
+
+<pre style="background-color: #000; font-family: monospace; color: #fff">
+<span style="background-color: #ff0087">Codec: </span> 0xb240 (blake2b-512)
+<span style="background-color: #00afff">Length:</span> 0x40
+<span style="background-color: #ffd75f">Digest:</span> 0x20fb5053ecefc742b73665625613de5ea09917988fac07d2977ece1c9bebb1aa0e5dfe8e3f2ae7b30ac3b97fac511a4745d71f5d4dbb211d69d06b34fb031e60
+</pre>
 
 ## TODO
 
