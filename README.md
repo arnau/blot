@@ -5,6 +5,8 @@ like `shasum` but using a variation of [Ben Laurie's
 objecthash](https://github.com/benlaurie/objecthash) combined with
 [Multihash](https://github.com/multiformats/multihash).
 
+[![Build Status](https://www.travis-ci.org/arnau/blot.svg?branch=master)](https://www.travis-ci.org/arnau/blot)
+
 Licensed under MIT (See [LICENSE](./LICENSE)).
 
 ## Usage
