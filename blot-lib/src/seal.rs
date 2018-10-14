@@ -12,16 +12,16 @@ use core::{Blot, Output};
 use digest::generic_array::GenericArray;
 use digest::{Digest, FixedOutput};
 use hex::{FromHex, FromHexError};
-use multihash::{Multihash, Tag, TagError};
+use multihash::{Multihash, Stamp, StampError};
 use uvar::{Uvar, UvarError};
 
 #[derive(Debug)]
 pub enum SealError {
     NotRedacted,
     DigestTooShort,
-    UnexpectedLength(Tag, u8),
+    UnexpectedLength(Stamp, u8),
     UvarParseError(UvarError),
-    TagError(TagError),
+    StampError(StampError),
     HexError(FromHexError),
 }
 
@@ -31,9 +31,9 @@ impl From<UvarError> for SealError {
     }
 }
 
-impl From<TagError> for SealError {
-    fn from(err: TagError) -> SealError {
-        SealError::TagError(err)
+impl From<StampError> for SealError {
+    fn from(err: StampError) -> SealError {
+        SealError::StampError(err)
     }
 }
 
@@ -49,7 +49,7 @@ pub const SEAL_MARK: u8 = 0x77;
 /// The `Seal` type. See [the module level documentation](index.html) for more.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Seal {
-    tag: Tag,
+    tag: Stamp,
     digest: Vec<u8>,
 }
 
@@ -58,7 +58,7 @@ impl Seal {
         &self.digest
     }
 
-    pub fn tag(&self) -> &Tag {
+    pub fn tag(&self) -> &Stamp {
         &self.tag
     }
 
@@ -139,10 +139,10 @@ impl Seal {
 
     fn from_bytes_without_mark(bytes: &[u8]) -> Result<Seal, SealError> {
         let (code, rest) = Uvar::take(&bytes)?;
-        let tag: Result<Tag, _> = code.into();
+        let tag: Result<Stamp, _> = code.into();
 
         match tag {
-            Err(err) => Err(SealError::TagError(err)),
+            Err(err) => Err(SealError::StampError(err)),
             Ok(tag) => {
                 if rest.len() < 2 {
                     return Err(SealError::DigestTooShort);

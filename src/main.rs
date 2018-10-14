@@ -12,7 +12,7 @@ extern crate serde_json;
 
 use ansi_term::Colour::{Black, Fixed};
 use blot::core::Blot;
-use blot::multihash::{Hash, Multihash, Tag};
+use blot::multihash::{Hash, Multihash, Stamp};
 use blot::value::{Value, ValueSet};
 
 use clap::{App, Arg};
@@ -62,7 +62,7 @@ For example, "foo", {"foo": "bar"}, [1, "foo"]
                 .long("verbose"),
         ).get_matches();
 
-    let alg = value_t!(matches, "algorithm", Tag).unwrap_or_else(|e| e.exit());
+    let alg = value_t!(matches, "algorithm", Stamp).unwrap_or_else(|e| e.exit());
     let input = matches.value_of("input").unwrap();
     let seq_mode = matches.value_of("sequence").unwrap();
 
@@ -71,7 +71,7 @@ For example, "foo", {"foo": "bar"}, [1, "foo"]
         "set" => serde_json::from_str::<ValueSet>(&input).unwrap().to_value(),
         _ => unreachable!(),
     };
-    let hash = value.foo(alg);
+    let hash = value.digest(alg);
 
     if matches.is_present("verbose") {
         display_verbose(&hash);

@@ -35,12 +35,12 @@ impl From<Vec<u8>> for Digest {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Hash {
-    tag: Tag,
+    tag: Stamp,
     digest: Digest,
 }
 
 impl Hash {
-    pub fn new<T: Into<Digest>>(tag: Tag, digest: T) -> Hash {
+    pub fn new<T: Into<Digest>>(tag: Stamp, digest: T) -> Hash {
         Hash {
             tag,
             digest: digest.into(),
@@ -51,7 +51,7 @@ impl Hash {
         &self.digest
     }
 
-    pub fn tag(&self) -> &Tag {
+    pub fn tag(&self) -> &Stamp {
         &self.tag
     }
 }
@@ -96,24 +96,24 @@ impl Multihash for Bag {
     }
 }
 
-/// A known multihash tag.
+/// Stamp of known multihash tags.
 ///
 /// For example, the SHA3-512 tag is:
 ///
 /// ```
-/// use blot::multihash::{Tag, Multihash};
+/// use blot::multihash::{Stamp, Multihash};
 /// use blot::uvar::Uvar;
 ///
-/// let name: &str = Tag::Sha3512.into();
-/// let code: Uvar = Tag::Sha3512.into();
-/// let length: u8 = Tag::Sha3512.length();
+/// let name: &str = Stamp::Sha3512.into();
+/// let code: Uvar = Stamp::Sha3512.into();
+/// let length: u8 = Stamp::Sha3512.length();
 ///
 /// assert_eq!(name, "sha3-512");
 /// assert_eq!(code, Uvar::new(vec![0x14]));
 /// assert_eq!(length, 64);
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Tag {
+pub enum Stamp {
     /// SHA-1 (20-byte hash size)
     Sha1,
     /// SHA-256 (32-byte hash size)
@@ -136,128 +136,124 @@ pub enum Tag {
     Blake2s256,
 }
 
-impl From<u64> for Tag {
-    fn from(code: u64) -> Tag {
+impl From<u64> for Stamp {
+    fn from(code: u64) -> Stamp {
         match code {
-            0x11 => Tag::Sha1,
-            0x12 => Tag::Sha2256,
-            0x13 => Tag::Sha2512,
-            0x14 => Tag::Sha3512,
-            0x15 => Tag::Sha3384,
-            0x16 => Tag::Sha3256,
-            0x17 => Tag::Sha3224,
-            // 0xb220 => Tag::Blake2b256,
-            0xb240 => Tag::Blake2b512,
-            0xb260 => Tag::Blake2s256,
+            0x11 => Stamp::Sha1,
+            0x12 => Stamp::Sha2256,
+            0x13 => Stamp::Sha2512,
+            0x14 => Stamp::Sha3512,
+            0x15 => Stamp::Sha3384,
+            0x16 => Stamp::Sha3256,
+            0x17 => Stamp::Sha3224,
+            0xb240 => Stamp::Blake2b512,
+            0xb260 => Stamp::Blake2s256,
             _ => unimplemented!(),
         }
     }
 }
 
 #[derive(Debug)]
-pub enum TagError {
+pub enum StampError {
     Unknown,
 }
 
-impl From<Uvar> for Result<Tag, TagError> {
-    fn from(code: Uvar) -> Result<Tag, TagError> {
+impl From<Uvar> for Result<Stamp, StampError> {
+    fn from(code: Uvar) -> Result<Stamp, StampError> {
         let n: u64 = code.into();
 
         match n {
-            0x11 => Ok(Tag::Sha1),
-            0x12 => Ok(Tag::Sha2256),
-            0x13 => Ok(Tag::Sha2512),
-            0x14 => Ok(Tag::Sha3512),
-            0x15 => Ok(Tag::Sha3384),
-            0x16 => Ok(Tag::Sha3256),
-            0x17 => Ok(Tag::Sha3224),
-            0xb240 => Ok(Tag::Blake2b512),
-            0xb260 => Ok(Tag::Blake2s256),
-            _ => Err(TagError::Unknown),
+            0x11 => Ok(Stamp::Sha1),
+            0x12 => Ok(Stamp::Sha2256),
+            0x13 => Ok(Stamp::Sha2512),
+            0x14 => Ok(Stamp::Sha3512),
+            0x15 => Ok(Stamp::Sha3384),
+            0x16 => Ok(Stamp::Sha3256),
+            0x17 => Ok(Stamp::Sha3224),
+            0xb240 => Ok(Stamp::Blake2b512),
+            0xb260 => Ok(Stamp::Blake2s256),
+            _ => Err(StampError::Unknown),
         }
     }
 }
 
-impl From<Tag> for Uvar {
-    fn from(hash: Tag) -> Uvar {
+impl From<Stamp> for Uvar {
+    fn from(hash: Stamp) -> Uvar {
         match hash {
-            Tag::Sha1 => 0x11.into(),
-            Tag::Sha2256 => 0x12.into(),
-            Tag::Sha2512 => 0x13.into(),
-            Tag::Sha3512 => 0x14.into(),
-            Tag::Sha3384 => 0x15.into(),
-            Tag::Sha3256 => 0x16.into(),
-            Tag::Sha3224 => 0x17.into(),
-            // Tag::Blake2b256 => 0xb220,
-            Tag::Blake2b512 => 0xb240.into(),
-            Tag::Blake2s256 => 0xb260.into(),
+            Stamp::Sha1 => 0x11.into(),
+            Stamp::Sha2256 => 0x12.into(),
+            Stamp::Sha2512 => 0x13.into(),
+            Stamp::Sha3512 => 0x14.into(),
+            Stamp::Sha3384 => 0x15.into(),
+            Stamp::Sha3256 => 0x16.into(),
+            Stamp::Sha3224 => 0x17.into(),
+            Stamp::Blake2b512 => 0xb240.into(),
+            Stamp::Blake2s256 => 0xb260.into(),
         }
     }
 }
 
-impl From<Tag> for String {
-    fn from(hash: Tag) -> String {
+impl From<Stamp> for String {
+    fn from(hash: Stamp) -> String {
         let s: &str = hash.into();
         s.into()
     }
 }
 
-impl<'a> From<Tag> for &'a str {
-    fn from(hash: Tag) -> &'a str {
+impl<'a> From<Stamp> for &'a str {
+    fn from(hash: Stamp) -> &'a str {
         match hash {
-            Tag::Sha1 => "sha1",
-            Tag::Sha2256 => "sha2-256",
-            Tag::Sha2512 => "sha2-512",
-            Tag::Sha3512 => "sha3-512",
-            Tag::Sha3384 => "sha3-384",
-            Tag::Sha3256 => "sha3-256",
-            Tag::Sha3224 => "sha3-224",
-            // Tag::Blake2b256 => "blake2b-256",
-            Tag::Blake2b512 => "blake2b-512",
-            Tag::Blake2s256 => "blake2s-256",
+            Stamp::Sha1 => "sha1",
+            Stamp::Sha2256 => "sha2-256",
+            Stamp::Sha2512 => "sha2-512",
+            Stamp::Sha3512 => "sha3-512",
+            Stamp::Sha3384 => "sha3-384",
+            Stamp::Sha3256 => "sha3-256",
+            Stamp::Sha3224 => "sha3-224",
+            Stamp::Blake2b512 => "blake2b-512",
+            Stamp::Blake2s256 => "blake2s-256",
         }
     }
 }
 
-impl<'a> From<&'a str> for Tag {
-    fn from(name: &str) -> Tag {
+impl<'a> From<&'a str> for Stamp {
+    fn from(name: &str) -> Stamp {
         match name {
-            "sha1" => Tag::Sha1,
-            "sha2-256" => Tag::Sha2256,
-            "sha2-512" => Tag::Sha2512,
-            "sha3-512" => Tag::Sha3512,
-            "sha3-384" => Tag::Sha3384,
-            "sha3-256" => Tag::Sha3256,
-            "sha3-224" => Tag::Sha3224,
-            // "blake2b-256" => Tag::Blake2b256,
-            "blake2b-512" => Tag::Blake2b512,
-            "blake2s-256" => Tag::Blake2s256,
+            "sha1" => Stamp::Sha1,
+            "sha2-256" => Stamp::Sha2256,
+            "sha2-512" => Stamp::Sha2512,
+            "sha3-512" => Stamp::Sha3512,
+            "sha3-384" => Stamp::Sha3384,
+            "sha3-256" => Stamp::Sha3256,
+            "sha3-224" => Stamp::Sha3224,
+            "blake2b-512" => Stamp::Blake2b512,
+            "blake2s-256" => Stamp::Blake2s256,
             _ => unimplemented!(),
         }
     }
 }
 
-impl FromStr for Tag {
-    type Err = TagError;
+impl FromStr for Stamp {
+    type Err = StampError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "sha1" => Ok(Tag::Sha1),
-            "sha2-256" => Ok(Tag::Sha2256),
-            "sha2-512" => Ok(Tag::Sha2512),
-            "sha3-512" => Ok(Tag::Sha3512),
-            "sha3-384" => Ok(Tag::Sha3384),
-            "sha3-256" => Ok(Tag::Sha3256),
-            "sha3-224" => Ok(Tag::Sha3224),
-            "blake2b-512" => Ok(Tag::Blake2b512),
-            "blake2s-256" => Ok(Tag::Blake2s256),
-            _ => Err(TagError::Unknown),
+            "sha1" => Ok(Stamp::Sha1),
+            "sha2-256" => Ok(Stamp::Sha2256),
+            "sha2-512" => Ok(Stamp::Sha2512),
+            "sha3-512" => Ok(Stamp::Sha3512),
+            "sha3-384" => Ok(Stamp::Sha3384),
+            "sha3-256" => Ok(Stamp::Sha3256),
+            "sha3-224" => Ok(Stamp::Sha3224),
+            "blake2b-512" => Ok(Stamp::Blake2b512),
+            "blake2s-256" => Ok(Stamp::Blake2s256),
+            _ => Err(StampError::Unknown),
         }
     }
 }
 
-impl From<Tag> for Bag {
-    fn from(hash: Tag) -> Bag {
+impl From<Stamp> for Bag {
+    fn from(hash: Stamp) -> Bag {
         Bag {
             name: hash.clone().into(),
             code: hash.code(),
@@ -266,7 +262,7 @@ impl From<Tag> for Bag {
     }
 }
 
-impl Multihash for Tag {
+impl Multihash for Stamp {
     fn name(&self) -> &str {
         self.clone().into()
     }
@@ -277,15 +273,15 @@ impl Multihash for Tag {
 
     fn length(&self) -> u8 {
         match self {
-            Tag::Sha1 => 20,
-            Tag::Sha2256 => 32,
-            Tag::Sha2512 => 64,
-            Tag::Sha3512 => 64,
-            Tag::Sha3384 => 48,
-            Tag::Sha3256 => 32,
-            Tag::Sha3224 => 28,
-            Tag::Blake2b512 => 64,
-            Tag::Blake2s256 => 32,
+            Stamp::Sha1 => 20,
+            Stamp::Sha2256 => 32,
+            Stamp::Sha2512 => 64,
+            Stamp::Sha3512 => 64,
+            Stamp::Sha3384 => 48,
+            Stamp::Sha3256 => 32,
+            Stamp::Sha3224 => 28,
+            Stamp::Blake2b512 => 64,
+            Stamp::Blake2s256 => 32,
         }
     }
 }

@@ -13,11 +13,12 @@
 //! extern crate blot;
 //! use serde_json::{self, Value};
 //! use blot::core::Blot;
+//! use blot::multihash::Stamp;
 //!
 //! let data = r#"["foo", "bar"]"#;
 //! let value: Value = serde_json::from_str(data).unwrap();
 //!
-//! assert_eq!(format!("{}", &value.sha2256()), "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2");
+//! assert_eq!(format!("{}", &value.digest(Stamp::Sha2256)), "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2");
 //! ```
 
 use core::{collection, Blot, Output};
@@ -110,13 +111,14 @@ impl Blot for Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use multihash::Stamp;
     use serde_json::{self, Value};
 
     #[test]
     fn common() {
         let expected = "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2";
         let value: Value = serde_json::from_str(r#"["foo", "bar"]"#).unwrap();
-        let actual = format!("{}", &value.sha2256());
+        let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
         assert_eq!(actual, expected);
     }
@@ -125,7 +127,7 @@ mod tests {
     fn common_redacted() {
         let expected = "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2";
         let value: Value = serde_json::from_str(r#"["**REDACTED**a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038", "bar"]"#).unwrap();
-        let actual = format!("{}", &value.sha2256());
+        let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
         assert_eq!(actual, expected);
     }
@@ -156,7 +158,7 @@ mod tests {
             ];
             for (raw, expected) in pairs.iter() {
                 let value: Value = serde_json::from_str(raw).unwrap();
-                let actual = format!("{}", &value.sha2256());
+                let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
                 assert_eq!(&actual, expected);
             }
@@ -176,7 +178,7 @@ mod tests {
             ];
             for (raw, expected) in pairs.iter() {
                 let value: Value = serde_json::from_str(raw).unwrap();
-                let actual = format!("{}", &value.sha2256());
+                let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
                 assert_eq!(&actual, expected);
             }
@@ -186,7 +188,7 @@ mod tests {
         fn list() {
             let expected = "1220acac86c0e609ca906f632b0e2dacccb2b77d22b0621f20ebece1a4835b93f6f0";
             let value: Value = serde_json::from_str(r#"[]"#).unwrap();
-            let actual = format!("{}", &value.sha2256());
+            let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
             assert_eq!(&actual, expected);
         }
@@ -218,7 +220,7 @@ mod tests {
             ];
             for (raw, expected) in pairs.iter() {
                 let value: Value = serde_json::from_str(raw).unwrap();
-                let actual = format!("{}", &value.sha2256());
+                let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
                 assert_eq!(&actual, expected);
             }

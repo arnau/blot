@@ -11,27 +11,12 @@ extern crate digest;
 extern crate itertools;
 extern crate serde_json;
 
-use blot::core::{Blot, Hash};
-use digest::Digest;
+use blot::core::Blot;
+use blot::multihash::Stamp;
 use itertools::Itertools;
 use serde_json::Value;
 use std::fs::File;
 use std::io::prelude::*;
-
-fn format_digest<T: Digest>(hash: Hash<T>) -> String {
-    let mut s = String::with_capacity(64);
-
-    match hash.digest() {
-        None => println!("nothing to print"),
-        Some(bytes) => {
-            for byte in bytes.iter() {
-                s.push_str(&format!("{:02x}", byte));
-            }
-        }
-    }
-
-    s
-}
 
 #[test]
 fn common_json_golden() {
@@ -46,7 +31,7 @@ fn common_json_golden() {
     for line in &lines.into_iter().chunks(2) {
         let pair: Vec<&str> = line.collect();
         let value: Value = serde_json::from_str(pair[0]).unwrap();
-        let actual = format_digest(value.sha2256());
+        let actual = format!("{}", value.digest(Stamp::Sha2256).digest());
         let expected = pair[1];
 
         assert_eq!(actual, expected);

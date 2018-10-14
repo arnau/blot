@@ -10,47 +10,12 @@ use digest::FixedOutput;
 use digester::{
     Blake2b512, Blake2s256, Sha1, Sha2256, Sha2512, Sha3224, Sha3256, Sha3384, Sha3512,
 };
-use multihash;
-use multihash::Multihash;
+use multihash::{Hash, Multihash, Stamp};
 use std;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::fmt;
 use tag::Tag;
 
 pub type Output<T> = GenericArray<u8, T>;
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Hash<T: Digest + FixedOutput> {
-    tag: multihash::Tag,
-    digest: Option<Output<<T as FixedOutput>::OutputSize>>,
-}
-
-impl<Hasher: Digest + FixedOutput> Hash<Hasher> {
-    pub fn tag(&self) -> &multihash::Tag {
-        &self.tag
-    }
-
-    pub fn digest(&self) -> &Option<Output<<Hasher as FixedOutput>::OutputSize>> {
-        &self.digest
-    }
-}
-
-impl<T: Digest + FixedOutput> fmt::Display for Hash<T> {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        match &self.digest {
-            None => Err(fmt::Error),
-            Some(bytes) => {
-                write!(formatter, "{:02x}", &self.tag.code())?;
-                write!(formatter, "{:02x}", &self.tag.length())?;
-                for byte in bytes.iter() {
-                    write!(formatter, "{:02x}", byte)?;
-                }
-
-                Ok(())
-            }
-        }
-    }
-}
 
 // TODO: Explore a way to use Multihash instead of Digest and Tag
 pub trait Blot {
@@ -59,110 +24,47 @@ pub trait Blot {
         Hasher,
     ) -> Output<<Hasher as FixedOutput>::OutputSize>;
 
-    fn foo(&self, tag: multihash::Tag) -> multihash::Hash {
+    // TODO: Find a better name
+    fn digest(&self, tag: Stamp) -> Hash {
         let digest = match tag {
-            multihash::Tag::Sha1 => {
+            Stamp::Sha1 => {
                 let hash = self.blot(Sha1::default());
                 hash.as_slice().to_vec()
             }
-            multihash::Tag::Sha2256 => {
+            Stamp::Sha2256 => {
                 let hash = self.blot(Sha2256::default());
                 hash.as_slice().to_vec()
             }
-            multihash::Tag::Sha2512 => {
+            Stamp::Sha2512 => {
                 let hash = self.blot(Sha2512::default());
                 hash.as_slice().to_vec()
             }
-            multihash::Tag::Sha3512 => {
+            Stamp::Sha3512 => {
                 let hash = self.blot(Sha3512::default());
                 hash.as_slice().to_vec()
             }
-            multihash::Tag::Sha3384 => {
+            Stamp::Sha3384 => {
                 let hash = self.blot(Sha3384::default());
                 hash.as_slice().to_vec()
             }
-            multihash::Tag::Sha3256 => {
+            Stamp::Sha3256 => {
                 let hash = self.blot(Sha3256::default());
                 hash.as_slice().to_vec()
             }
-            multihash::Tag::Sha3224 => {
+            Stamp::Sha3224 => {
                 let hash = self.blot(Sha3224::default());
                 hash.as_slice().to_vec()
             }
-            multihash::Tag::Blake2b512 => {
+            Stamp::Blake2b512 => {
                 let hash = self.blot(Blake2b512::default());
                 hash.as_slice().to_vec()
             }
-            multihash::Tag::Blake2s256 => {
+            Stamp::Blake2s256 => {
                 let hash = self.blot(Blake2s256::default());
                 hash.as_slice().to_vec()
             }
         };
-        multihash::Hash::new(tag, digest)
-    }
-
-    fn sha2256(&self) -> Hash<Sha2256> {
-        let output = self.blot(Sha2256::default());
-        Hash {
-            tag: multihash::Tag::Sha2256,
-            digest: Some(output),
-        }
-    }
-
-    fn sha2512(&self) -> Hash<Sha2512> {
-        let output = self.blot(Sha2512::default());
-        Hash {
-            tag: multihash::Tag::Sha2512,
-            digest: Some(output),
-        }
-    }
-
-    fn sha3512(&self) -> Hash<Sha3512> {
-        let output = self.blot(Sha3512::default());
-        Hash {
-            tag: multihash::Tag::Sha3512,
-            digest: Some(output),
-        }
-    }
-
-    fn sha3384(&self) -> Hash<Sha3384> {
-        let output = self.blot(Sha3384::default());
-        Hash {
-            tag: multihash::Tag::Sha3384,
-            digest: Some(output),
-        }
-    }
-
-    fn sha3256(&self) -> Hash<Sha3256> {
-        let output = self.blot(Sha3256::default());
-        Hash {
-            tag: multihash::Tag::Sha3256,
-            digest: Some(output),
-        }
-    }
-
-    fn sha3224(&self) -> Hash<Sha3224> {
-        let output = self.blot(Sha3224::default());
-        Hash {
-            tag: multihash::Tag::Sha3224,
-            digest: Some(output),
-        }
-    }
-
-    fn blake2b512(&self) -> Hash<Blake2b512> {
-        let output = self.blot(Blake2b512::default());
-        Hash {
-            tag: multihash::Tag::Blake2b512,
-            digest: Some(output),
-        }
-    }
-
-    fn blake2s256(&self) -> Hash<Blake2s256> {
-        let output = self.blot(Blake2s256::default());
-        Hash {
-            tag: multihash::Tag::Blake2s256,
-            digest: Some(output),
-        }
+        Hash::new(tag, digest)
     }
 }
 
@@ -455,40 +357,15 @@ pub fn float_normalize(mut f: f64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use digest::generic_array::typenum::U32;
     use hex::FromHex;
-
-    // Test helper
-    fn hash2256_from_slice(slice: &[u8]) -> Hash<Sha2256> {
-        let digest = *GenericArray::<u8, U32>::from_slice(slice);
-        Hash {
-            tag: multihash::Tag::Sha2256,
-            digest: Some(digest),
-        }
-    }
-
-    #[test]
-    fn unicode_blot_raw() {
-        let expected = hash2256_from_slice(&vec![
-            166, 166, 229, 231, 131, 195, 99, 205, 149, 105, 62, 193, 137, 194, 104, 35, 21, 217,
-            86, 134, 147, 151, 115, 134, 121, 181, 99, 5, 242, 9, 80, 56,
-        ]);
-        let actual = "foo".sha2256();
-
-        assert_eq!(actual.tag, expected.tag);
-        assert_eq!(actual.digest, expected.digest);
-    }
+    use multihash::Stamp;
 
     #[test]
     fn bool_blot_raw() {
-        let expected = hash2256_from_slice(
-            &Vec::from_hex("7dc96f776c8423e57a2785489a3f9c43fb6e756876d6ad9a9cac4aa4e72ec193")
-                .unwrap(),
-        );
-        let actual = true.sha2256();
+        let expected = "7dc96f776c8423e57a2785489a3f9c43fb6e756876d6ad9a9cac4aa4e72ec193";
+        let actual = true.digest(Stamp::Sha2256);
 
-        assert_eq!(actual.tag, expected.tag);
-        assert_eq!(actual.digest, expected.digest);
+        assert_eq!(format!("{}", actual.digest()), expected);
     }
 
     #[test]
@@ -508,7 +385,7 @@ mod tests {
             ),
         ];
         for (raw, expected) in pairs.iter() {
-            let actual = format!("{}", raw.sha2256());
+            let actual = format!("{}", raw.digest(Stamp::Sha2256));
             assert_eq!(&actual, expected);
         }
     }
@@ -516,7 +393,7 @@ mod tests {
     #[test]
     fn null_blot() {
         let expected = "12201b16b1df538ba12dc3f97edbb85caa7050d46c148134290feba80f8236c83db9";
-        let actual = format!("{}", None::<String>.sha2256());
+        let actual = format!("{}", None::<String>.digest(Stamp::Sha2256));
 
         assert_eq!(actual, expected);
     }
@@ -527,18 +404,18 @@ mod tests {
         let bytes =
             Vec::from_hex("6b18693874513ba13da54d61aafa7cad0c8f5573f3431d6f1c04b07ddb27d6bb")
                 .unwrap();
-        let actual = format!("{}", (&bytes[..]).sha2256());
+        let actual = format!("{}", (&bytes[..]).digest(Stamp::Sha2256));
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn bool_blot() {
         assert_eq!(
-            format!("{}", true.sha2256()),
+            format!("{}", true.digest(Stamp::Sha2256)),
             "12207dc96f776c8423e57a2785489a3f9c43fb6e756876d6ad9a9cac4aa4e72ec193"
         );
         assert_eq!(
-            format!("{}", false.sha2256()),
+            format!("{}", false.digest(Stamp::Sha2256)),
             "1220c02c0b965e023abee808f2b548d8d5193a8b5229be6f3121a6f16e2d41a449b3"
         );
     }
@@ -556,7 +433,7 @@ mod tests {
             ),
         ];
         for (raw, expected) in pairs.iter() {
-            let actual = format!("{}", raw.sha2256());
+            let actual = format!("{}", raw.digest(Stamp::Sha2256));
             assert_eq!(&actual, expected);
         }
     }
@@ -564,7 +441,7 @@ mod tests {
     #[test]
     fn zero_float_blot() {
         let expected = "122060101d8c9cb988411468e38909571f357daa67bff5a7b0a3f9ae295cd4aba33d";
-        let actual = format!("{}", 0.0.sha2256());
+        let actual = format!("{}", 0.0.digest(Stamp::Sha2256));
         assert_eq!(actual, expected);
     }
     #[test]
@@ -589,7 +466,7 @@ mod tests {
             ),
         ];
         for (raw, expected) in pairs.iter() {
-            let actual = format!("{}", raw.sha2256());
+            let actual = format!("{}", raw.digest(Stamp::Sha2256));
             assert_eq!(&actual, expected);
         }
     }
@@ -598,7 +475,7 @@ mod tests {
     fn empty_list_blot() {
         let expected = "1220acac86c0e609ca906f632b0e2dacccb2b77d22b0621f20ebece1a4835b93f6f0";
         let list: Vec<u8> = vec![];
-        let actual = format!("{}", list.sha2256());
+        let actual = format!("{}", list.digest(Stamp::Sha2256));
         assert_eq!(actual, expected);
     }
 
@@ -615,7 +492,7 @@ mod tests {
             ),
         ];
         for (raw, expected) in pairs.iter() {
-            let actual = format!("{}", raw.sha2256());
+            let actual = format!("{}", raw.digest(Stamp::Sha2256));
             assert_eq!(&actual, expected);
         }
     }
@@ -624,7 +501,7 @@ mod tests {
     fn empty_set_blot() {
         let expected = "1220043a718774c572bd8a25adbeb1bfcd5c0256ae11cecf9f9c3f925d0e52beaf89";
         let set: HashSet<u8> = HashSet::new();
-        let actual = format!("{}", set.sha2256());
+        let actual = format!("{}", set.digest(Stamp::Sha2256));
         assert_eq!(actual, expected);
     }
 
@@ -633,7 +510,7 @@ mod tests {
         let expected = "1220a4fef47742c80337b2eb0dcc6ed36610c93aca0afef86a65f381020b9de2284d";
         let mut set: HashSet<&str> = HashSet::new();
         set.insert("foo");
-        let actual = format!("{}", set.sha2256());
+        let actual = format!("{}", set.digest(Stamp::Sha2256));
         assert_eq!(actual, expected);
     }
 
@@ -641,7 +518,7 @@ mod tests {
     fn empty_dict_blot() {
         let expected = "122018ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4";
         let dict: HashMap<&str, u8> = HashMap::new();
-        let actual = format!("{}", dict.sha2256());
+        let actual = format!("{}", dict.digest(Stamp::Sha2256));
         assert_eq!(actual, expected);
     }
 
@@ -650,7 +527,7 @@ mod tests {
         let expected = "12207ef5237c3027d6c58100afadf37796b3d351025cf28038280147d42fdc53b960";
         let mut dict: HashMap<&str, &str> = HashMap::new();
         dict.insert("foo", "bar");
-        let actual = format!("{}", dict.sha2256());
+        let actual = format!("{}", dict.digest(Stamp::Sha2256));
         assert_eq!(actual, expected);
     }
 }

@@ -162,12 +162,13 @@ impl From<Seal> for Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use multihash::Stamp;
 
     #[test]
     fn common() {
         let expected = "122032ae896c413cfdc79eec68be9139c86ded8b279238467c216cf2bec4d5f1e4a2";
         let value: Value = vec!["foo".into(), "bar".into()].into();
-        let actual = format!("{}", &value.sha2256());
+        let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
         assert_eq!(actual, expected);
     }
@@ -194,7 +195,7 @@ mod tests {
         ];
 
         for (value, expected) in pairs.iter() {
-            let actual = format!("{}", &value.sha2256());
+            let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
             assert_eq!(&actual, expected);
         }
@@ -219,7 +220,7 @@ mod tests {
         );
         let value = list!["foo", Value::Dict(map)];
         let expected = "1220783a423b094307bcb28d005bc2f026ff44204442ef3513585e7e73b66e3c2213";
-        let actual = format!("{}", &value.sha2256());
+        let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
         assert_eq!(&actual, expected);
     }
@@ -243,7 +244,7 @@ mod tests {
         );
         let value = Value::List(vec!["foo".into(), Value::Dict(map)]);
         let expected = "1220726e7ae9e3fadf8a2228bf33e505a63df8db1638fa4f21429673d387dbd1c52a";
-        let actual = format!("{}", &value.sha2256());
+        let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
         assert_eq!(&actual, expected);
     }
@@ -261,7 +262,7 @@ mod tests {
         let value = Value::Dict(map);
 
         let expected = "1220618cf0582d2e716a70e99c2f3079d74892fec335e3982eb926835967cb0c246c";
-        let actual = format!("{}", &value.sha2256());
+        let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
         assert_eq!(&actual, expected);
     }
@@ -271,7 +272,7 @@ mod tests {
         let value = set!{"foo", 23.6, set!{set!{}}, set!{set!{1}}};
 
         let expected = "12203773b0a5283f91243a304d2bb0adb653564573bc5301aa8bb63156266ea5d398";
-        let actual = format!("{}", &value.sha2256());
+        let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
         assert_eq!(&actual, expected);
     }
@@ -287,7 +288,7 @@ mod tests {
         };
 
         let expected = "12203773b0a5283f91243a304d2bb0adb653564573bc5301aa8bb63156266ea5d398";
-        let actual = format!("{}", &value.sha2256());
+        let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
         assert_eq!(&actual, expected);
     }
@@ -310,7 +311,7 @@ mod tests {
         ];
 
         for (value, expected) in pairs.iter() {
-            let actual = format!("{}", &value.sha2256());
+            let actual = format!("{}", &value.digest(Stamp::Sha2256));
 
             assert_eq!(&actual, expected);
         }
@@ -323,17 +324,17 @@ mod tests {
             "**REDACTED**1220454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1",
         ).unwrap();
         let value = Value::Redacted(seal);
-        let actual = format!("{}", &value.sha2256());
+        let actual = format!("{}", &value.digest(Stamp::Sha2256));
         assert_eq!(&actual, expected);
     }
 
     #[test]
     fn redacted_mix() {
-        let expected = list!["foo", "bar"].sha2256();
+        let expected = list!["foo", "bar"].digest(Stamp::Sha2256);
         let foo = Seal::from_str(
             "**REDACTED**1220a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038",
         ).unwrap();
-        let actual = list![foo, "bar"].sha2256();
+        let actual = list![foo, "bar"].digest(Stamp::Sha2256);
         assert_eq!(actual.to_string(), expected.to_string());
     }
 

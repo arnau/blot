@@ -8,6 +8,7 @@
 extern crate blot;
 
 use blot::core::Blot;
+use blot::multihash::Stamp;
 use blot::value::Value;
 
 fn main() -> std::io::Result<()> {
@@ -15,7 +16,7 @@ fn main() -> std::io::Result<()> {
     let set = set!{"foo", "bar", list![1, 1.0]};
 
     // Computes the blot hash with the SHA2-256 algorithm.
-    let hash = set.sha2256();
+    let hash = set.digest(Stamp::Sha2256);
 
     println!("{}", &hash);
 
