@@ -10,11 +10,12 @@ use std::fmt;
 use uvar::Uvar;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Digest(Vec<u8>);
+// pub struct Digest(Vec<u8>);
+pub struct Digest(Box<[u8]>);
 
 impl fmt::Display for Digest {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        for byte in &self.0 {
+        for byte in self.0.as_ref() {
             write!(formatter, "{:02x}", byte)?;
         }
 
@@ -30,7 +31,7 @@ impl Digest {
 
 impl From<Vec<u8>> for Digest {
     fn from(vec: Vec<u8>) -> Digest {
-        Digest(vec)
+        Digest(vec.into_boxed_slice())
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
