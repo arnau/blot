@@ -4,16 +4,23 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
-use digest;
 use digester;
 use std::fmt;
+use tag::Tag;
 use uvar::Uvar;
 
+// TODO: Find a proper name for this.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 // pub struct Digest(Vec<u8>);
-pub struct Digest(Box<[u8]>);
+pub struct Harvest(Box<[u8]>);
 
-impl fmt::Display for Digest {
+impl AsRef<[u8]> for Harvest {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
+impl fmt::Display for Harvest {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         for byte in self.0.as_ref() {
             write!(formatter, "{:02x}", byte)?;
@@ -23,32 +30,39 @@ impl fmt::Display for Digest {
     }
 }
 
-impl Digest {
+impl Harvest {
     pub fn as_slice(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl From<Vec<u8>> for Digest {
-    fn from(vec: Vec<u8>) -> Digest {
-        Digest(vec.into_boxed_slice())
+impl From<Vec<u8>> for Harvest {
+    fn from(vec: Vec<u8>) -> Self {
+        Harvest(vec.into_boxed_slice())
     }
 }
+
+impl From<Box<[u8]>> for Harvest {
+    fn from(b: Box<[u8]>) -> Self {
+        Harvest(b)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Hash<T: Multihash> {
     tag: T,
-    digest: Digest,
+    digest: Harvest,
 }
 
 impl<T: Multihash> Hash<T> {
-    pub fn new<D: Into<Digest>>(tag: T, digest: D) -> Hash<T> {
+    pub fn new<D: Into<Harvest>>(tag: T, digest: D) -> Hash<T> {
         Hash {
             tag,
             digest: digest.into(),
         }
     }
 
-    pub fn digest(&self) -> &Digest {
+    pub fn digest(&self) -> &Harvest {
         &self.digest
     }
 
@@ -81,8 +95,8 @@ impl<T: Multihash> fmt::Display for Hash<T> {
 /// assert_eq!(tag.code(), Uvar::new(vec![0x14]));
 /// assert_eq!(tag.length(), 64);
 /// ```
-pub trait Multihash: Default + PartialEq {
-    type Digester: digest::Digest + Clone;
+pub trait Multihash: Default + Clone + PartialEq {
+    type Digester: Default;
 
     fn length(&self) -> u8;
     fn code(&self) -> Uvar;
@@ -90,6 +104,9 @@ pub trait Multihash: Default + PartialEq {
     fn digester(&self) -> Self::Digester {
         Self::Digester::default()
     }
+
+    fn digest_primitive(&self, tag: Tag, bytes: &[u8]) -> Harvest;
+    fn digest_collection(&self, tag: Tag, list: Vec<Vec<u8>>) -> Harvest;
 }
 
 #[derive(Debug)]
@@ -141,8 +158,24 @@ impl Multihash for Sha1 {
         20
     }
 
-    fn digester(&self) -> Self::Digester {
-        Self::Digester::default()
+    fn digest_primitive(&self, tag: Tag, bytes: &[u8]) -> Harvest {
+        use sha1::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+        digester.input(bytes);
+        digester.result().as_ref().to_vec().into()
+    }
+
+    fn digest_collection(&self, tag: Tag, list: Vec<Vec<u8>>) -> Harvest {
+        use sha1::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+
+        for bytes in list {
+            digester.input(&bytes);
+        }
+
+        digester.result().as_ref().to_vec().into()
     }
 }
 
@@ -189,6 +222,26 @@ impl Multihash for Sha2256 {
     fn length(&self) -> u8 {
         32
     }
+
+    fn digest_primitive(&self, tag: Tag, bytes: &[u8]) -> Harvest {
+        use sha2::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+        digester.input(bytes);
+        digester.result().as_ref().to_vec().into()
+    }
+
+    fn digest_collection(&self, tag: Tag, list: Vec<Vec<u8>>) -> Harvest {
+        use sha2::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+
+        for bytes in list {
+            digester.input(&bytes);
+        }
+
+        digester.result().as_ref().to_vec().into()
+    }
 }
 
 // Sha2-512
@@ -233,6 +286,26 @@ impl Multihash for Sha2512 {
 
     fn length(&self) -> u8 {
         64
+    }
+
+    fn digest_primitive(&self, tag: Tag, bytes: &[u8]) -> Harvest {
+        use sha2::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+        digester.input(bytes);
+        digester.result().as_ref().to_vec().into()
+    }
+
+    fn digest_collection(&self, tag: Tag, list: Vec<Vec<u8>>) -> Harvest {
+        use sha2::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+
+        for bytes in list {
+            digester.input(&bytes);
+        }
+
+        digester.result().as_ref().to_vec().into()
     }
 }
 
@@ -279,6 +352,26 @@ impl Multihash for Sha3512 {
     fn length(&self) -> u8 {
         64
     }
+
+    fn digest_primitive(&self, tag: Tag, bytes: &[u8]) -> Harvest {
+        use sha3::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+        digester.input(bytes);
+        digester.result().as_ref().to_vec().into()
+    }
+
+    fn digest_collection(&self, tag: Tag, list: Vec<Vec<u8>>) -> Harvest {
+        use sha3::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+
+        for bytes in list {
+            digester.input(&bytes);
+        }
+
+        digester.result().as_ref().to_vec().into()
+    }
 }
 
 // Sha3-384
@@ -323,6 +416,26 @@ impl Multihash for Sha3384 {
 
     fn length(&self) -> u8 {
         48
+    }
+
+    fn digest_primitive(&self, tag: Tag, bytes: &[u8]) -> Harvest {
+        use sha3::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+        digester.input(bytes);
+        digester.result().as_ref().to_vec().into()
+    }
+
+    fn digest_collection(&self, tag: Tag, list: Vec<Vec<u8>>) -> Harvest {
+        use sha3::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+
+        for bytes in list {
+            digester.input(&bytes);
+        }
+
+        digester.result().as_ref().to_vec().into()
     }
 }
 
@@ -369,6 +482,26 @@ impl Multihash for Sha3256 {
     fn length(&self) -> u8 {
         32
     }
+
+    fn digest_primitive(&self, tag: Tag, bytes: &[u8]) -> Harvest {
+        use sha3::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+        digester.input(bytes);
+        digester.result().as_ref().to_vec().into()
+    }
+
+    fn digest_collection(&self, tag: Tag, list: Vec<Vec<u8>>) -> Harvest {
+        use sha3::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+
+        for bytes in list {
+            digester.input(&bytes);
+        }
+
+        digester.result().as_ref().to_vec().into()
+    }
 }
 
 // Sha3-224
@@ -413,6 +546,26 @@ impl Multihash for Sha3224 {
 
     fn length(&self) -> u8 {
         28
+    }
+
+    fn digest_primitive(&self, tag: Tag, bytes: &[u8]) -> Harvest {
+        use sha3::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+        digester.input(bytes);
+        digester.result().as_ref().to_vec().into()
+    }
+
+    fn digest_collection(&self, tag: Tag, list: Vec<Vec<u8>>) -> Harvest {
+        use sha3::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+
+        for bytes in list {
+            digester.input(&bytes);
+        }
+
+        digester.result().as_ref().to_vec().into()
     }
 }
 
@@ -459,6 +612,26 @@ impl Multihash for Blake2b512 {
     fn length(&self) -> u8 {
         64
     }
+
+    fn digest_primitive(&self, tag: Tag, bytes: &[u8]) -> Harvest {
+        use blake2::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+        digester.input(bytes);
+        digester.result().as_ref().to_vec().into()
+    }
+
+    fn digest_collection(&self, tag: Tag, list: Vec<Vec<u8>>) -> Harvest {
+        use blake2::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+
+        for bytes in list {
+            digester.input(&bytes);
+        }
+
+        digester.result().as_ref().to_vec().into()
+    }
 }
 
 // Blake2s-256
@@ -503,5 +676,25 @@ impl Multihash for Blake2s256 {
 
     fn length(&self) -> u8 {
         32
+    }
+
+    fn digest_primitive(&self, tag: Tag, bytes: &[u8]) -> Harvest {
+        use blake2::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+        digester.input(bytes);
+        digester.result().as_ref().to_vec().into()
+    }
+
+    fn digest_collection(&self, tag: Tag, list: Vec<Vec<u8>>) -> Harvest {
+        use blake2::Digest;
+        let mut digester = Self::Digester::default();
+        digester.input(&tag.to_bytes());
+
+        for bytes in list {
+            digester.input(&bytes);
+        }
+
+        digester.result().as_ref().to_vec().into()
     }
 }

@@ -8,11 +8,9 @@
 //!
 //! Type [`Seal`] represents a sealed digest multihash.
 
-use core::{Blot, Output};
-use digest::generic_array::GenericArray;
-use digest::{Digest, FixedOutput};
+use core::Blot;
 use hex::{FromHex, FromHexError};
-use multihash::Multihash;
+use multihash::{Harvest, Multihash};
 use uvar::{Uvar, UvarError};
 
 #[derive(Debug)]
@@ -175,10 +173,7 @@ impl<T: Multihash> Seal<T> {
 }
 
 impl<T: Multihash> Blot for Seal<T> {
-    fn blot<Hasher: Digest + Clone + FixedOutput>(
-        &self,
-        _hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        GenericArray::from_slice(&self.digest).clone()
+    fn blot<D: Multihash>(&self, _: D) -> Harvest {
+        self.digest.clone().into_boxed_slice().into()
     }
 }

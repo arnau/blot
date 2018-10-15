@@ -4,133 +4,67 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
-use digest::generic_array::GenericArray;
-pub use digest::Digest;
-use digest::FixedOutput;
+pub use digest::{Digest, DynDigest};
 
-use multihash::{Hash, Multihash};
+use multihash::{Harvest, Hash, Multihash};
 use std;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use tag::Tag;
 
-pub type Output<T> = GenericArray<u8, T>;
-
-// TODO: Explore a way to use Multihash instead of Digest and Tag
 pub trait Blot {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize>;
+    fn blot<T: Multihash>(&self, T) -> Harvest;
 
-    fn digest<T: Multihash>(&self, tag: T) -> Hash<T> {
-        let hash = self.blot(tag.digester());
-        let digest = hash.as_slice().to_vec();
-        Hash::new(tag, digest)
+    fn digest<D: Multihash>(&self, digester: D) -> Hash<D> {
+        let digest = self.blot(digester.clone());
+        Hash::new(digester, digest)
     }
-}
-
-/// Hashes a list of bytes tagged with the given tag.
-///
-/// Plumbing function to implement `trait Blot` for new types.
-///
-/// ```
-/// use blot::core;
-/// use blot::tag::Tag;
-/// use blot::digester::Sha2256;
-///
-/// core::primitive(Sha2256::default(), Tag::Unicode, "foo".as_bytes());
-/// ```
-pub fn primitive<Hasher: Digest + FixedOutput>(
-    mut hasher: Hasher,
-    tag: Tag,
-    bytes: &[u8],
-) -> Output<<Hasher as FixedOutput>::OutputSize> {
-    hasher.input(&tag.to_bytes());
-    hasher.input(bytes);
-    hasher.result()
-}
-
-/// Hashes a list of lists of bytes tagged with the given tag.
-///
-/// Plumbing function to implement `trait Blot` for new types.
-pub fn collection<Hasher: Digest + FixedOutput>(
-    mut hasher: Hasher,
-    tag: Tag,
-    list: Vec<Vec<u8>>,
-) -> Output<<Hasher as FixedOutput>::OutputSize> {
-    hasher.input(&tag.to_bytes());
-    for bytes in list {
-        hasher.input(&bytes);
-    }
-    hasher.result()
 }
 
 impl<'a, T: ?Sized + Blot> Blot for &'a T {
     #[inline]
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        T::blot(*self, hasher)
+    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+        T::blot(*self, digester)
     }
 }
 
 impl Blot for str {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        primitive(hasher, Tag::Unicode, self.as_bytes())
+    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+        digester.digest_primitive(Tag::Unicode, self.as_bytes())
     }
 }
 
 impl Blot for String {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        primitive(hasher, Tag::Unicode, self.as_bytes())
+    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+        digester.digest_primitive(Tag::Unicode, self.as_bytes())
     }
 }
 
 impl Blot for [u8] {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        primitive(hasher, Tag::Raw, self)
+    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+        digester.digest_primitive(Tag::Raw, self)
     }
 }
 
 impl<'a, T: Blot> Blot for Option<T> {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
         match self {
-            None => primitive(hasher, Tag::Null, "".as_bytes()),
-            Some(a) => a.blot(hasher),
+            None => digester.digest_primitive(Tag::Null, "".as_bytes()),
+            Some(a) => a.blot(digester),
         }
     }
 }
 
 impl<'a> Blot for bool {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
         let string = if *self { "1" } else { "0" };
-        primitive(hasher, Tag::Bool, string.as_bytes())
+        digester.digest_primitive(Tag::Bool, string.as_bytes())
     }
 }
 
 macro_rules! blot_integer (($type:ident) => {
     impl Blot for $type {
-        fn blot<Hasher: Digest + FixedOutput + Clone>(
-            &self,
-            hasher: Hasher,
-        ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-            primitive(hasher, Tag::Integer, self.to_string().as_bytes())
+        fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+            digester.digest_primitive(Tag::Integer, self.to_string().as_bytes())
         }
     }
 });
@@ -147,31 +81,28 @@ blot_integer!(i64);
 blot_integer!(isize);
 
 impl<T: Blot> Blot for Vec<T> {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        let mut h = hasher.clone();
-        h.input(&Tag::List.to_bytes());
+    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+        let list: Vec<Vec<u8>> = self
+            .iter()
+            .map(|item| {
+                item.blot(digester.clone())
+                    .as_ref()
+                    .iter()
+                    .map(|x| *x)
+                    .collect::<Vec<u8>>()
+            }).collect();
 
-        for el in self {
-            h.input(el.blot(hasher.clone()).as_slice())
-        }
-
-        h.result()
+        digester.digest_collection(Tag::List, list)
     }
 }
 
 impl<T: Blot + Eq + std::hash::Hash> Blot for HashSet<T> {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
         let mut list: Vec<Vec<u8>> = self
             .iter()
             .map(|item| {
-                item.blot(hasher.clone())
-                    .as_slice()
+                item.blot(digester.clone())
+                    .as_ref()
                     .iter()
                     .map(|x| *x)
                     .collect::<Vec<u8>>()
@@ -179,7 +110,7 @@ impl<T: Blot + Eq + std::hash::Hash> Blot for HashSet<T> {
 
         list.sort_unstable();
 
-        collection(hasher, Tag::Set, list)
+        digester.digest_collection(Tag::Set, list)
     }
 }
 
@@ -188,23 +119,20 @@ where
     K: Blot + Eq + std::hash::Hash,
     V: Blot + PartialEq,
 {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
         let mut list: Vec<Vec<u8>> = self
             .iter()
             .map(|(k, v)| {
                 let mut res: Vec<u8> = Vec::with_capacity(64);
-                res.extend_from_slice(k.blot(hasher.clone()).as_slice());
-                res.extend_from_slice(v.blot(hasher.clone()).as_slice());
+                res.extend_from_slice(k.blot(digester.clone()).as_ref());
+                res.extend_from_slice(v.blot(digester.clone()).as_ref());
 
                 res
             }).collect();
 
         list.sort_unstable();
 
-        collection(hasher, Tag::Dict, list)
+        digester.digest_collection(Tag::Dict, list)
     }
 }
 
@@ -213,51 +141,42 @@ where
     K: Blot + Eq + std::hash::Hash,
     V: Blot + PartialEq,
 {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
         let mut list: Vec<Vec<u8>> = self
             .iter()
             .map(|(k, v)| {
                 let mut res: Vec<u8> = Vec::with_capacity(64);
-                res.extend_from_slice(k.blot(hasher.clone()).as_slice());
-                res.extend_from_slice(v.blot(hasher.clone()).as_slice());
+                res.extend_from_slice(k.blot(digester.clone()).as_ref());
+                res.extend_from_slice(v.blot(digester.clone()).as_ref());
 
                 res
             }).collect();
 
         list.sort_unstable();
 
-        collection(hasher, Tag::Dict, list)
+        digester.digest_collection(Tag::Dict, list)
     }
 }
 
 impl Blot for f32 {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        (*self as f64).blot(hasher)
+    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+        (*self as f64).blot(digester)
     }
 }
 
 impl Blot for f64 {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
         if self.is_nan() {
-            primitive(hasher, Tag::Float, "NaN".as_bytes())
+            digester.digest_primitive(Tag::Float, "NaN".as_bytes())
         } else if self.is_infinite() {
             let s = if self.is_sign_negative() {
                 "-Infinity"
             } else {
                 "Infinity"
             };
-            primitive(hasher, Tag::Float, s.as_bytes())
+            digester.digest_primitive(Tag::Float, s.as_bytes())
         } else {
-            primitive(hasher, Tag::Float, float_normalize(*self).as_bytes())
+            digester.digest_primitive(Tag::Float, float_normalize(*self).as_bytes())
         }
     }
 }
