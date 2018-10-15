@@ -173,7 +173,7 @@ impl<T: Multihash> Seal<T> {
 }
 
 impl<T: Multihash> Blot for Seal<T> {
-    fn blot<D: Multihash>(&self, _: D) -> Harvest {
+    fn blot<D: Multihash>(&self, _: &D) -> Harvest {
         self.digest.clone().into_boxed_slice().into()
     }
 }

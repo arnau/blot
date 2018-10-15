@@ -12,41 +12,41 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use tag::Tag;
 
 pub trait Blot {
-    fn blot<T: Multihash>(&self, T) -> Harvest;
+    fn blot<T: Multihash>(&self, &T) -> Harvest;
 
     fn digest<D: Multihash>(&self, digester: D) -> Hash<D> {
-        let digest = self.blot(digester.clone());
+        let digest = self.blot(&digester);
         Hash::new(digester, digest)
     }
 }
 
 impl<'a, T: ?Sized + Blot> Blot for &'a T {
     #[inline]
-    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         T::blot(*self, digester)
     }
 }
 
 impl Blot for str {
-    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         digester.digest_primitive(Tag::Unicode, self.as_bytes())
     }
 }
 
 impl Blot for String {
-    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         digester.digest_primitive(Tag::Unicode, self.as_bytes())
     }
 }
 
 impl Blot for [u8] {
-    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         digester.digest_primitive(Tag::Raw, self)
     }
 }
 
 impl<'a, T: Blot> Blot for Option<T> {
-    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         match self {
             None => digester.digest_primitive(Tag::Null, "".as_bytes()),
             Some(a) => a.blot(digester),
@@ -55,7 +55,7 @@ impl<'a, T: Blot> Blot for Option<T> {
 }
 
 impl<'a> Blot for bool {
-    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         let string = if *self { "1" } else { "0" };
         digester.digest_primitive(Tag::Bool, string.as_bytes())
     }
@@ -63,7 +63,7 @@ impl<'a> Blot for bool {
 
 macro_rules! blot_integer (($type:ident) => {
     impl Blot for $type {
-        fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+        fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
             digester.digest_primitive(Tag::Integer, self.to_string().as_bytes())
         }
     }
@@ -81,11 +81,11 @@ blot_integer!(i64);
 blot_integer!(isize);
 
 impl<T: Blot> Blot for Vec<T> {
-    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         let list: Vec<Vec<u8>> = self
             .iter()
             .map(|item| {
-                item.blot(digester.clone())
+                item.blot(digester)
                     .as_ref()
                     .iter()
                     .map(|x| *x)
@@ -97,11 +97,11 @@ impl<T: Blot> Blot for Vec<T> {
 }
 
 impl<T: Blot + Eq + std::hash::Hash> Blot for HashSet<T> {
-    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         let mut list: Vec<Vec<u8>> = self
             .iter()
             .map(|item| {
-                item.blot(digester.clone())
+                item.blot(digester)
                     .as_ref()
                     .iter()
                     .map(|x| *x)
@@ -119,13 +119,13 @@ where
     K: Blot + Eq + std::hash::Hash,
     V: Blot + PartialEq,
 {
-    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         let mut list: Vec<Vec<u8>> = self
             .iter()
             .map(|(k, v)| {
                 let mut res: Vec<u8> = Vec::with_capacity(64);
-                res.extend_from_slice(k.blot(digester.clone()).as_ref());
-                res.extend_from_slice(v.blot(digester.clone()).as_ref());
+                res.extend_from_slice(k.blot(digester).as_ref());
+                res.extend_from_slice(v.blot(digester).as_ref());
 
                 res
             }).collect();
@@ -141,13 +141,13 @@ where
     K: Blot + Eq + std::hash::Hash,
     V: Blot + PartialEq,
 {
-    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         let mut list: Vec<Vec<u8>> = self
             .iter()
             .map(|(k, v)| {
                 let mut res: Vec<u8> = Vec::with_capacity(64);
-                res.extend_from_slice(k.blot(digester.clone()).as_ref());
-                res.extend_from_slice(v.blot(digester.clone()).as_ref());
+                res.extend_from_slice(k.blot(digester).as_ref());
+                res.extend_from_slice(v.blot(digester).as_ref());
 
                 res
             }).collect();
@@ -159,13 +159,13 @@ where
 }
 
 impl Blot for f32 {
-    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         (*self as f64).blot(digester)
     }
 }
 
 impl Blot for f64 {
-    fn blot<D: Multihash>(&self, digester: D) -> Harvest {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         if self.is_nan() {
             digester.digest_primitive(Tag::Float, "NaN".as_bytes())
         } else if self.is_infinite() {
