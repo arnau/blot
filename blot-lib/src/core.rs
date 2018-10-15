@@ -27,49 +27,6 @@ pub trait Blot {
         let digest = hash.as_slice().to_vec();
         Hash::new(tag, digest)
     }
-
-    //     // TODO: Find a better name
-    //     fn digest(&self, tag: Stamp) -> Hash {
-    //         let digest = match tag {
-    //             Stamp::Sha1 => {
-    //                 let hash = self.blot(Sha1::default());
-    //                 hash.as_slice().to_vec()
-    //             }
-    //             Stamp::Sha2256 => {
-    //                 let hash = self.blot(Sha2256::default());
-    //                 hash.as_slice().to_vec()
-    //             }
-    //             Stamp::Sha2512 => {
-    //                 let hash = self.blot(Sha2512::default());
-    //                 hash.as_slice().to_vec()
-    //             }
-    //             Stamp::Sha3512 => {
-    //                 let hash = self.blot(Sha3512::default());
-    //                 hash.as_slice().to_vec()
-    //             }
-    //             Stamp::Sha3384 => {
-    //                 let hash = self.blot(Sha3384::default());
-    //                 hash.as_slice().to_vec()
-    //             }
-    //             Stamp::Sha3256 => {
-    //                 let hash = self.blot(Sha3256::default());
-    //                 hash.as_slice().to_vec()
-    //             }
-    //             Stamp::Sha3224 => {
-    //                 let hash = self.blot(Sha3224::default());
-    //                 hash.as_slice().to_vec()
-    //             }
-    //             Stamp::Blake2b512 => {
-    //                 let hash = self.blot(Blake2b512::default());
-    //                 hash.as_slice().to_vec()
-    //             }
-    //             Stamp::Blake2s256 => {
-    //                 let hash = self.blot(Blake2s256::default());
-    //                 hash.as_slice().to_vec()
-    //             }
-    //         };
-    //         Hash::new(tag, digest)
-    //     }
 }
 
 /// Hashes a list of bytes tagged with the given tag.
@@ -362,7 +319,7 @@ pub fn float_normalize(mut f: f64) -> String {
 mod tests {
     use super::*;
     use hex::FromHex;
-    use multihash::{Multihash, Sha2256};
+    use multihash::Sha2256;
 
     #[test]
     fn bool_blot_raw() {
