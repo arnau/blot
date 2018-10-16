@@ -8,24 +8,24 @@ use std::fmt;
 use tag::Tag;
 use uvar::Uvar;
 
-#[cfg(feature = "blot_sha1")]
+#[cfg(feature = "sha-1")]
 mod sha1;
-#[cfg(feature = "blot_sha1")]
+#[cfg(feature = "sha1")]
 pub use self::sha1::Sha1;
 
-#[cfg(feature = "blot_sha2")]
+#[cfg(feature = "sha2")]
 mod sha2;
-#[cfg(feature = "blot_sha2")]
+#[cfg(feature = "sha2")]
 pub use self::sha2::{Sha2256, Sha2512};
 
-#[cfg(feature = "blot_sha3")]
+#[cfg(feature = "sha3")]
 mod sha3;
-#[cfg(feature = "blot_sha3")]
+#[cfg(feature = "sha3")]
 pub use self::sha3::{Sha3224, Sha3256, Sha3384, Sha3512};
 
-#[cfg(feature = "blot_blake2")]
+#[cfg(feature = "blake2")]
 mod blake2;
-#[cfg(feature = "blot_blake2")]
+#[cfg(feature = "blake2")]
 pub use self::blake2::{Blake2b512, Blake2s256};
 
 /// Multihash trait to be implemented by any algorithm used by Blot.

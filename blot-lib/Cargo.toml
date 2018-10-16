@@ -21,9 +21,5 @@ regex = "1"
 lazy_static = "1.1.0"
 
 [features]
-default = ["blot_sha1", "blot_sha2", "blot_sha3", "blot_blake2"]
-blot_sha1 = ["sha-1"]
-blot_sha2 = ["sha2"]
-blot_sha3 = ["sha3"]
-blot_blake2 = ["blake2"]
+default = ["sha-1", "sha2", "sha3", "blake2"]
 common_json = []
