@@ -7,12 +7,11 @@
 #![cfg(feature = "common_json")]
 
 extern crate blot;
-extern crate digest;
 extern crate itertools;
 extern crate serde_json;
 
 use blot::core::Blot;
-use blot::multihash::Stamp;
+use blot::multihash::Sha2256;
 use itertools::Itertools;
 use serde_json::Value;
 use std::fs::File;
@@ -31,7 +30,7 @@ fn common_json_golden() {
     for line in &lines.into_iter().chunks(2) {
         let pair: Vec<&str> = line.collect();
         let value: Value = serde_json::from_str(pair[0]).unwrap();
-        let actual = format!("{}", value.digest(Stamp::Sha2256).digest());
+        let actual = format!("{}", value.digest(Sha2256).digest());
         let expected = pair[1];
 
         assert_eq!(actual, expected);

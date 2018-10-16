@@ -4,172 +4,65 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
-use digest::generic_array::GenericArray;
-pub use digest::Digest;
-use digest::FixedOutput;
-use digester::{
-    Blake2b512, Blake2s256, Sha1, Sha2256, Sha2512, Sha3224, Sha3256, Sha3384, Sha3512,
-};
-use multihash::{Hash, Multihash, Stamp};
+use multihash::{Harvest, Hash, Multihash};
 use std;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use tag::Tag;
 
-pub type Output<T> = GenericArray<u8, T>;
-
-// TODO: Explore a way to use Multihash instead of Digest and Tag
 pub trait Blot {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize>;
+    fn blot<T: Multihash>(&self, &T) -> Harvest;
 
-    // TODO: Find a better name
-    fn digest(&self, tag: Stamp) -> Hash {
-        let digest = match tag {
-            Stamp::Sha1 => {
-                let hash = self.blot(Sha1::default());
-                hash.as_slice().to_vec()
-            }
-            Stamp::Sha2256 => {
-                let hash = self.blot(Sha2256::default());
-                hash.as_slice().to_vec()
-            }
-            Stamp::Sha2512 => {
-                let hash = self.blot(Sha2512::default());
-                hash.as_slice().to_vec()
-            }
-            Stamp::Sha3512 => {
-                let hash = self.blot(Sha3512::default());
-                hash.as_slice().to_vec()
-            }
-            Stamp::Sha3384 => {
-                let hash = self.blot(Sha3384::default());
-                hash.as_slice().to_vec()
-            }
-            Stamp::Sha3256 => {
-                let hash = self.blot(Sha3256::default());
-                hash.as_slice().to_vec()
-            }
-            Stamp::Sha3224 => {
-                let hash = self.blot(Sha3224::default());
-                hash.as_slice().to_vec()
-            }
-            Stamp::Blake2b512 => {
-                let hash = self.blot(Blake2b512::default());
-                hash.as_slice().to_vec()
-            }
-            Stamp::Blake2s256 => {
-                let hash = self.blot(Blake2s256::default());
-                hash.as_slice().to_vec()
-            }
-        };
-        Hash::new(tag, digest)
+    fn digest<D: Multihash>(&self, digester: D) -> Hash<D> {
+        let digest = self.blot(&digester);
+        Hash::new(digester, digest)
     }
-}
-
-/// Hashes a list of bytes tagged with the given tag.
-///
-/// Plumbing function to implement `trait Blot` for new types.
-///
-/// ```
-/// use blot::core;
-/// use blot::tag::Tag;
-/// use blot::digester::Sha2256;
-///
-/// core::primitive(Sha2256::default(), Tag::Unicode, "foo".as_bytes());
-/// ```
-pub fn primitive<Hasher: Digest + FixedOutput>(
-    mut hasher: Hasher,
-    tag: Tag,
-    bytes: &[u8],
-) -> Output<<Hasher as FixedOutput>::OutputSize> {
-    hasher.input(&tag.to_bytes());
-    hasher.input(bytes);
-    hasher.result()
-}
-
-/// Hashes a list of lists of bytes tagged with the given tag.
-///
-/// Plumbing function to implement `trait Blot` for new types.
-pub fn collection<Hasher: Digest + FixedOutput>(
-    mut hasher: Hasher,
-    tag: Tag,
-    list: Vec<Vec<u8>>,
-) -> Output<<Hasher as FixedOutput>::OutputSize> {
-    hasher.input(&tag.to_bytes());
-    for bytes in list {
-        hasher.input(&bytes);
-    }
-    hasher.result()
 }
 
 impl<'a, T: ?Sized + Blot> Blot for &'a T {
     #[inline]
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        T::blot(*self, hasher)
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
+        T::blot(*self, digester)
     }
 }
 
 impl Blot for str {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        primitive(hasher, Tag::Unicode, self.as_bytes())
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
+        digester.digest_primitive(Tag::Unicode, self.as_bytes())
     }
 }
 
 impl Blot for String {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        primitive(hasher, Tag::Unicode, self.as_bytes())
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
+        digester.digest_primitive(Tag::Unicode, self.as_bytes())
     }
 }
 
 impl Blot for [u8] {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        primitive(hasher, Tag::Raw, self)
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
+        digester.digest_primitive(Tag::Raw, self)
     }
 }
 
 impl<'a, T: Blot> Blot for Option<T> {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         match self {
-            None => primitive(hasher, Tag::Null, "".as_bytes()),
-            Some(a) => a.blot(hasher),
+            None => digester.digest_primitive(Tag::Null, "".as_bytes()),
+            Some(a) => a.blot(digester),
         }
     }
 }
 
 impl<'a> Blot for bool {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         let string = if *self { "1" } else { "0" };
-        primitive(hasher, Tag::Bool, string.as_bytes())
+        digester.digest_primitive(Tag::Bool, string.as_bytes())
     }
 }
 
 macro_rules! blot_integer (($type:ident) => {
     impl Blot for $type {
-        fn blot<Hasher: Digest + FixedOutput + Clone>(
-            &self,
-            hasher: Hasher,
-        ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-            primitive(hasher, Tag::Integer, self.to_string().as_bytes())
+        fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
+            digester.digest_primitive(Tag::Integer, self.to_string().as_bytes())
         }
     }
 });
@@ -186,31 +79,28 @@ blot_integer!(i64);
 blot_integer!(isize);
 
 impl<T: Blot> Blot for Vec<T> {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        let mut h = hasher.clone();
-        h.input(&Tag::List.to_bytes());
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
+        let list: Vec<Vec<u8>> = self
+            .iter()
+            .map(|item| {
+                item.blot(digester)
+                    .as_ref()
+                    .iter()
+                    .map(|x| *x)
+                    .collect::<Vec<u8>>()
+            }).collect();
 
-        for el in self {
-            h.input(el.blot(hasher.clone()).as_slice())
-        }
-
-        h.result()
+        digester.digest_collection(Tag::List, list)
     }
 }
 
 impl<T: Blot + Eq + std::hash::Hash> Blot for HashSet<T> {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         let mut list: Vec<Vec<u8>> = self
             .iter()
             .map(|item| {
-                item.blot(hasher.clone())
-                    .as_slice()
+                item.blot(digester)
+                    .as_ref()
                     .iter()
                     .map(|x| *x)
                     .collect::<Vec<u8>>()
@@ -218,7 +108,7 @@ impl<T: Blot + Eq + std::hash::Hash> Blot for HashSet<T> {
 
         list.sort_unstable();
 
-        collection(hasher, Tag::Set, list)
+        digester.digest_collection(Tag::Set, list)
     }
 }
 
@@ -227,23 +117,20 @@ where
     K: Blot + Eq + std::hash::Hash,
     V: Blot + PartialEq,
 {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         let mut list: Vec<Vec<u8>> = self
             .iter()
             .map(|(k, v)| {
                 let mut res: Vec<u8> = Vec::with_capacity(64);
-                res.extend_from_slice(k.blot(hasher.clone()).as_slice());
-                res.extend_from_slice(v.blot(hasher.clone()).as_slice());
+                res.extend_from_slice(k.blot(digester).as_ref());
+                res.extend_from_slice(v.blot(digester).as_ref());
 
                 res
             }).collect();
 
         list.sort_unstable();
 
-        collection(hasher, Tag::Dict, list)
+        digester.digest_collection(Tag::Dict, list)
     }
 }
 
@@ -252,51 +139,42 @@ where
     K: Blot + Eq + std::hash::Hash,
     V: Blot + PartialEq,
 {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         let mut list: Vec<Vec<u8>> = self
             .iter()
             .map(|(k, v)| {
                 let mut res: Vec<u8> = Vec::with_capacity(64);
-                res.extend_from_slice(k.blot(hasher.clone()).as_slice());
-                res.extend_from_slice(v.blot(hasher.clone()).as_slice());
+                res.extend_from_slice(k.blot(digester).as_ref());
+                res.extend_from_slice(v.blot(digester).as_ref());
 
                 res
             }).collect();
 
         list.sort_unstable();
 
-        collection(hasher, Tag::Dict, list)
+        digester.digest_collection(Tag::Dict, list)
     }
 }
 
 impl Blot for f32 {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        (*self as f64).blot(hasher)
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
+        (*self as f64).blot(digester)
     }
 }
 
 impl Blot for f64 {
-    fn blot<Hasher: Digest + FixedOutput + Clone>(
-        &self,
-        hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
+    fn blot<D: Multihash>(&self, digester: &D) -> Harvest {
         if self.is_nan() {
-            primitive(hasher, Tag::Float, "NaN".as_bytes())
+            digester.digest_primitive(Tag::Float, "NaN".as_bytes())
         } else if self.is_infinite() {
             let s = if self.is_sign_negative() {
                 "-Infinity"
             } else {
                 "Infinity"
             };
-            primitive(hasher, Tag::Float, s.as_bytes())
+            digester.digest_primitive(Tag::Float, s.as_bytes())
         } else {
-            primitive(hasher, Tag::Float, float_normalize(*self).as_bytes())
+            digester.digest_primitive(Tag::Float, float_normalize(*self).as_bytes())
         }
     }
 }
@@ -358,12 +236,12 @@ pub fn float_normalize(mut f: f64) -> String {
 mod tests {
     use super::*;
     use hex::FromHex;
-    use multihash::Stamp;
+    use multihash::Sha2256;
 
     #[test]
     fn bool_blot_raw() {
         let expected = "7dc96f776c8423e57a2785489a3f9c43fb6e756876d6ad9a9cac4aa4e72ec193";
-        let actual = true.digest(Stamp::Sha2256);
+        let actual = true.digest(Sha2256);
 
         assert_eq!(format!("{}", actual.digest()), expected);
     }
@@ -385,7 +263,7 @@ mod tests {
             ),
         ];
         for (raw, expected) in pairs.iter() {
-            let actual = format!("{}", raw.digest(Stamp::Sha2256));
+            let actual = format!("{}", raw.digest(Sha2256));
             assert_eq!(&actual, expected);
         }
     }
@@ -393,7 +271,7 @@ mod tests {
     #[test]
     fn null_blot() {
         let expected = "12201b16b1df538ba12dc3f97edbb85caa7050d46c148134290feba80f8236c83db9";
-        let actual = format!("{}", None::<String>.digest(Stamp::Sha2256));
+        let actual = format!("{}", None::<String>.digest(Sha2256));
 
         assert_eq!(actual, expected);
     }
@@ -404,18 +282,18 @@ mod tests {
         let bytes =
             Vec::from_hex("6b18693874513ba13da54d61aafa7cad0c8f5573f3431d6f1c04b07ddb27d6bb")
                 .unwrap();
-        let actual = format!("{}", (&bytes[..]).digest(Stamp::Sha2256));
+        let actual = format!("{}", (&bytes[..]).digest(Sha2256));
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn bool_blot() {
         assert_eq!(
-            format!("{}", true.digest(Stamp::Sha2256)),
+            format!("{}", true.digest(Sha2256)),
             "12207dc96f776c8423e57a2785489a3f9c43fb6e756876d6ad9a9cac4aa4e72ec193"
         );
         assert_eq!(
-            format!("{}", false.digest(Stamp::Sha2256)),
+            format!("{}", false.digest(Sha2256)),
             "1220c02c0b965e023abee808f2b548d8d5193a8b5229be6f3121a6f16e2d41a449b3"
         );
     }
@@ -433,7 +311,7 @@ mod tests {
             ),
         ];
         for (raw, expected) in pairs.iter() {
-            let actual = format!("{}", raw.digest(Stamp::Sha2256));
+            let actual = format!("{}", raw.digest(Sha2256));
             assert_eq!(&actual, expected);
         }
     }
@@ -441,7 +319,7 @@ mod tests {
     #[test]
     fn zero_float_blot() {
         let expected = "122060101d8c9cb988411468e38909571f357daa67bff5a7b0a3f9ae295cd4aba33d";
-        let actual = format!("{}", 0.0.digest(Stamp::Sha2256));
+        let actual = format!("{}", 0.0.digest(Sha2256));
         assert_eq!(actual, expected);
     }
     #[test]
@@ -466,7 +344,7 @@ mod tests {
             ),
         ];
         for (raw, expected) in pairs.iter() {
-            let actual = format!("{}", raw.digest(Stamp::Sha2256));
+            let actual = format!("{}", raw.digest(Sha2256));
             assert_eq!(&actual, expected);
         }
     }
@@ -475,7 +353,7 @@ mod tests {
     fn empty_list_blot() {
         let expected = "1220acac86c0e609ca906f632b0e2dacccb2b77d22b0621f20ebece1a4835b93f6f0";
         let list: Vec<u8> = vec![];
-        let actual = format!("{}", list.digest(Stamp::Sha2256));
+        let actual = format!("{}", list.digest(Sha2256));
         assert_eq!(actual, expected);
     }
 
@@ -492,7 +370,7 @@ mod tests {
             ),
         ];
         for (raw, expected) in pairs.iter() {
-            let actual = format!("{}", raw.digest(Stamp::Sha2256));
+            let actual = format!("{}", raw.digest(Sha2256));
             assert_eq!(&actual, expected);
         }
     }
@@ -501,7 +379,7 @@ mod tests {
     fn empty_set_blot() {
         let expected = "1220043a718774c572bd8a25adbeb1bfcd5c0256ae11cecf9f9c3f925d0e52beaf89";
         let set: HashSet<u8> = HashSet::new();
-        let actual = format!("{}", set.digest(Stamp::Sha2256));
+        let actual = format!("{}", set.digest(Sha2256));
         assert_eq!(actual, expected);
     }
 
@@ -510,7 +388,7 @@ mod tests {
         let expected = "1220a4fef47742c80337b2eb0dcc6ed36610c93aca0afef86a65f381020b9de2284d";
         let mut set: HashSet<&str> = HashSet::new();
         set.insert("foo");
-        let actual = format!("{}", set.digest(Stamp::Sha2256));
+        let actual = format!("{}", set.digest(Sha2256));
         assert_eq!(actual, expected);
     }
 
@@ -518,7 +396,7 @@ mod tests {
     fn empty_dict_blot() {
         let expected = "122018ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4";
         let dict: HashMap<&str, u8> = HashMap::new();
-        let actual = format!("{}", dict.digest(Stamp::Sha2256));
+        let actual = format!("{}", dict.digest(Sha2256));
         assert_eq!(actual, expected);
     }
 
@@ -527,7 +405,7 @@ mod tests {
         let expected = "12207ef5237c3027d6c58100afadf37796b3d351025cf28038280147d42fdc53b960";
         let mut dict: HashMap<&str, &str> = HashMap::new();
         dict.insert("foo", "bar");
-        let actual = format!("{}", dict.digest(Stamp::Sha2256));
+        let actual = format!("{}", dict.digest(Sha2256));
         assert_eq!(actual, expected);
     }
 }

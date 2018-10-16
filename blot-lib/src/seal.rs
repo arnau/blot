@@ -8,32 +8,24 @@
 //!
 //! Type [`Seal`] represents a sealed digest multihash.
 
-use core::{Blot, Output};
-use digest::generic_array::GenericArray;
-use digest::{Digest, FixedOutput};
+use core::Blot;
 use hex::{FromHex, FromHexError};
-use multihash::{Multihash, Stamp, StampError};
+use multihash::{Harvest, Multihash};
 use uvar::{Uvar, UvarError};
 
 #[derive(Debug)]
 pub enum SealError {
+    InvalidStamp { actual: Uvar, expected: Uvar },
     NotRedacted,
     DigestTooShort,
-    UnexpectedLength(Stamp, u8),
+    UnexpectedLength { actual: u8, expected: u8 },
     UvarParseError(UvarError),
-    StampError(StampError),
     HexError(FromHexError),
 }
 
 impl From<UvarError> for SealError {
     fn from(err: UvarError) -> SealError {
         SealError::UvarParseError(err)
-    }
-}
-
-impl From<StampError> for SealError {
-    fn from(err: StampError) -> SealError {
-        SealError::StampError(err)
     }
 }
 
@@ -48,17 +40,17 @@ pub const SEAL_MARK: u8 = 0x77;
 
 /// The `Seal` type. See [the module level documentation](index.html) for more.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Seal {
-    tag: Stamp,
+pub struct Seal<T: Multihash> {
+    tag: T,
     digest: Vec<u8>,
 }
 
-impl Seal {
+impl<T: Multihash> Seal<T> {
     pub fn digest(&self) -> &[u8] {
         &self.digest
     }
 
-    pub fn tag(&self) -> &Stamp {
+    pub fn tag(&self) -> &T {
         &self.tag
     }
 
@@ -81,15 +73,17 @@ impl Seal {
     ///
     /// ```
     /// # extern crate blot;
-    /// # use blot::seal::Seal;
-    /// let seal_classic = Seal::from_str("**REDACTED**1220a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038");
-    /// let seal = Seal::from_str("771220a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038");
+    /// use blot::seal::Seal;
+    /// use blot::multihash::{Multihash, Sha2256};
+    ///
+    /// let seal_classic: Result<Seal<Sha2256>, _> = Seal::from_str("**REDACTED**1220a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038");
+    /// let seal: Result<Seal<Sha2256>, _> = Seal::from_str("771220a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038");
     ///
     /// assert!(seal_classic.is_ok());
     /// assert!(seal.is_ok());
     /// assert_eq!(seal.unwrap(), seal_classic.unwrap());
     /// ```
-    pub fn from_str(input: &str) -> Result<Seal, SealError> {
+    pub fn from_str(input: &str) -> Result<Seal<T>, SealError> {
         let bare = if input.starts_with("**REDACTED**") {
             input
                 .get(12..)
@@ -117,10 +111,12 @@ impl Seal {
     /// ```
     /// # extern crate hex;
     /// # extern crate blot;
-    /// # use blot::seal::Seal;
-    /// # use hex::FromHex;
+    /// use blot::seal::Seal;
+    /// use blot::multihash::{Multihash, Sha2256};
+    /// use hex::FromHex;
+    ///
     /// let bytes = Vec::from_hex("771220a6a6e5e783c363cd95693ec189c2682315d956869397738679b56305f2095038").unwrap();
-    /// let seal = Seal::from_bytes(&bytes);
+    /// let seal: Result<Seal<Sha2256>, _> = Seal::from_bytes(&bytes);
     ///
     /// assert!(seal.is_ok());
     /// ```
@@ -129,7 +125,7 @@ impl Seal {
     ///
     /// This operation fails with [`SealError::NotRedacted`] if the first byte is not `0x77`, the
     /// seal mark.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Seal, SealError> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Seal<T>, SealError> {
         if bytes[0] != SEAL_MARK {
             return Err(SealError::NotRedacted);
         }
@@ -137,42 +133,47 @@ impl Seal {
         Seal::from_bytes_without_mark(&bytes[1..])
     }
 
-    fn from_bytes_without_mark(bytes: &[u8]) -> Result<Seal, SealError> {
+    fn from_bytes_without_mark(bytes: &[u8]) -> Result<Seal<T>, SealError> {
         let (code, rest) = Uvar::take(&bytes)?;
-        let tag: Result<Stamp, _> = code.into();
+        let tag = T::default();
 
-        match tag {
-            Err(err) => Err(SealError::StampError(err)),
-            Ok(tag) => {
-                if rest.len() < 2 {
-                    return Err(SealError::DigestTooShort);
-                }
-
-                let length = *&rest[0];
-                let digest = &rest[1..];
-
-                if length != tag.length() {
-                    return Err(SealError::UnexpectedLength(tag, length));
-                }
-
-                if digest.len() as u8 != length {
-                    return Err(SealError::UnexpectedLength(tag, digest.len() as u8));
-                }
-
-                Ok(Seal {
-                    tag: tag,
-                    digest: digest.into(),
-                })
-            }
+        if tag.code() != code {
+            return Err(SealError::InvalidStamp {
+                actual: code,
+                expected: tag.code(),
+            });
         }
+
+        if rest.len() < 2 {
+            return Err(SealError::DigestTooShort);
+        }
+
+        let length = *&rest[0];
+        let digest = &rest[1..];
+
+        if length != tag.length() {
+            return Err(SealError::UnexpectedLength {
+                expected: tag.length(),
+                actual: length,
+            });
+        }
+
+        if digest.len() as u8 != length {
+            return Err(SealError::UnexpectedLength {
+                expected: tag.length(),
+                actual: digest.len() as u8,
+            });
+        }
+
+        Ok(Seal {
+            tag: tag,
+            digest: digest.into(),
+        })
     }
 }
 
-impl Blot for Seal {
-    fn blot<Hasher: Digest + Clone + FixedOutput>(
-        &self,
-        _hasher: Hasher,
-    ) -> Output<<Hasher as FixedOutput>::OutputSize> {
-        GenericArray::from_slice(&self.digest).clone()
+impl<T: Multihash> Blot for Seal<T> {
+    fn blot<D: Multihash>(&self, _: &D) -> Harvest {
+        self.digest.clone().into_boxed_slice().into()
     }
 }
