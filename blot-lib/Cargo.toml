@@ -16,10 +16,15 @@ hex = "0.3"
 serde_json = "1.0"
 serde = "1.0"
 serde_derive = "1.0"
-itertools = "0.7.8"
 regex = "1"
 lazy_static = "1.1.0"
+
+[dev-dependencies]
+itertools = "0.7.8"
 
 [features]
 default = ["sha-1", "sha2", "sha3", "blake2"]
 common_json = []
+
+[badges]
+travis-ci = { repository = "arnau/blot" }
