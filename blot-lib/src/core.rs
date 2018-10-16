@@ -4,8 +4,6 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
-pub use digest::{Digest, DynDigest};
-
 use multihash::{Harvest, Hash, Multihash};
 use std;
 use std::collections::{BTreeMap, HashMap, HashSet};

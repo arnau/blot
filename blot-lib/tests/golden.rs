@@ -7,7 +7,6 @@
 #![cfg(feature = "common_json")]
 
 extern crate blot;
-extern crate digest;
 extern crate itertools;
 extern crate serde_json;
 
