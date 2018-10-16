@@ -14,7 +14,7 @@ use uvar::Uvar;
 
 // Blake2b-512
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Blake2b512;
 
 impl Default for Blake2b512 {
@@ -77,7 +77,7 @@ impl Multihash for Blake2b512 {
 
 // Blake2s-256
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Blake2s256;
 
 impl Default for Blake2s256 {

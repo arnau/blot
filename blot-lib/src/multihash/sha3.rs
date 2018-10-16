@@ -14,7 +14,7 @@ use uvar::Uvar;
 
 // Sha3-512
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Sha3512;
 
 impl Default for Sha3512 {
@@ -77,7 +77,7 @@ impl Multihash for Sha3512 {
 
 // Sha3-384
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Sha3384;
 
 impl Default for Sha3384 {
@@ -140,7 +140,7 @@ impl Multihash for Sha3384 {
 
 // Sha3-256
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Sha3256;
 
 impl Default for Sha3256 {
@@ -203,7 +203,7 @@ impl Multihash for Sha3256 {
 
 // Sha3-224
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Sha3224;
 
 impl Default for Sha3224 {

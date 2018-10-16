@@ -28,9 +28,41 @@ mod blake2;
 #[cfg(feature = "blot_blake2")]
 pub use self::blake2::{Blake2b512, Blake2s256};
 
-// TODO: Find a proper name for this.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-// pub struct Digest(Vec<u8>);
+/// Multihash trait to be implemented by any algorithm used by Blot.
+///
+/// For example, the SHA3-512 algorithm:
+///
+/// ```
+/// use blot::multihash::{Sha3512, Multihash};
+/// use blot::uvar::Uvar;
+///
+/// let tag = Sha3512::default();
+///
+/// assert_eq!(tag.name(), "sha3-512");
+/// assert_eq!(tag.code(), Uvar::new(vec![0x14]));
+/// assert_eq!(tag.length(), 64);
+/// ```
+pub trait Multihash: Default + PartialEq {
+    type Digester: Default;
+
+    fn length(&self) -> u8;
+    fn code(&self) -> Uvar;
+    fn name(&self) -> &str;
+    fn digester(&self) -> Self::Digester {
+        Self::Digester::default()
+    }
+
+    fn digest_primitive(&self, tag: Tag, bytes: &[u8]) -> Harvest;
+    fn digest_collection(&self, tag: Tag, list: Vec<Vec<u8>>) -> Harvest;
+}
+
+#[derive(Debug)]
+pub enum MultihashError {
+    Unknown,
+}
+
+/// Multihash harvest digest.
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Harvest(Box<[u8]>);
 
 impl AsRef<[u8]> for Harvest {
@@ -67,7 +99,8 @@ impl From<Box<[u8]>> for Harvest {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+/// Multihash tagged hash. Tags a harvested digest with a multihash implementation.
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Hash<T: Multihash> {
     tag: T,
     digest: Harvest,
@@ -98,37 +131,4 @@ impl<T: Multihash> fmt::Display for Hash<T> {
 
         Ok(())
     }
-}
-
-/// Multihash trait to be implemented by any algorithm used by Blot.
-///
-/// For example, the SHA3-512 algorithm:
-///
-/// ```
-/// use blot::multihash::{Sha3512, Multihash};
-/// use blot::uvar::Uvar;
-///
-/// let tag = Sha3512::default();
-///
-/// assert_eq!(tag.name(), "sha3-512");
-/// assert_eq!(tag.code(), Uvar::new(vec![0x14]));
-/// assert_eq!(tag.length(), 64);
-/// ```
-pub trait Multihash: Default + Clone + PartialEq {
-    type Digester: Default;
-
-    fn length(&self) -> u8;
-    fn code(&self) -> Uvar;
-    fn name(&self) -> &str;
-    fn digester(&self) -> Self::Digester {
-        Self::Digester::default()
-    }
-
-    fn digest_primitive(&self, tag: Tag, bytes: &[u8]) -> Harvest;
-    fn digest_collection(&self, tag: Tag, list: Vec<Vec<u8>>) -> Harvest;
-}
-
-#[derive(Debug)]
-pub enum MultihashError {
-    Unknown,
 }

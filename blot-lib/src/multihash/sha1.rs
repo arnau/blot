@@ -12,7 +12,7 @@ use crypto_sha1::Digest;
 use tag::Tag;
 use uvar::Uvar;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Sha1;
 
 impl Default for Sha1 {
