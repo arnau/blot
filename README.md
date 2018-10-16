@@ -71,10 +71,6 @@ blot --sequence=set -a sha3-256 '["7716209dec0a5fc4b58a6d2a89c248c8ac845fc2a42ec
 
 ## TODO
 
-* specialise Value over Multihash? This should help enforce consistency with
-  redacted values.
-* bloton! (akin to js!)
-
 ### Blot Notation
 
 ```
