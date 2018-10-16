@@ -13,9 +13,13 @@ extern crate regex;
 extern crate serde;
 extern crate serde_json;
 
+#[cfg(feature = "blake2")]
 extern crate blake2 as crypto_blake2;
+#[cfg(feature = "sha-1")]
 extern crate sha1 as crypto_sha1;
+#[cfg(feature = "sha2")]
 extern crate sha2 as crypto_sha2;
+#[cfg(feature = "sha3")]
 extern crate sha3 as crypto_sha3;
 
 pub mod core;
