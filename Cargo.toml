@@ -3,6 +3,14 @@ name = "blot-cli"
 version = "0.1.0"
 authors = ["Arnau Siches <asiches@gmail.com>"]
 
+license = "MIT"
+description = "Blot command line interface"
+
+homepage = "https://github.com/arnau/blot"
+repository = "https://github.com/arnau/blot"
+keywords = ["blot", "multihash", "objecthash", "cli"]
+
+
 [[bin]]
 name = "blot"
 path = "src/main.rs"

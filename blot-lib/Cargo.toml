@@ -3,6 +3,13 @@ name = "blot-lib"
 version = "0.1.0"
 authors = ["Arnau Siches <asiches@gmail.com>"]
 
+license = "MIT"
+description = "Blot library implements Objecthash mixed with Multihash"
+
+homepage = "https://github.com/arnau/blot"
+repository = "https://github.com/arnau/blot"
+keywords = ["blot", "multihash", "objecthash", "sha2", "blake2"]
+
 [lib]
 name = "blot"
 path = "src/lib.rs"
