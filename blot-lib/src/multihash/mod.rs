@@ -10,7 +10,7 @@ use uvar::Uvar;
 
 #[cfg(feature = "sha-1")]
 mod sha1;
-#[cfg(feature = "sha1")]
+#[cfg(feature = "sha-1")]
 pub use self::sha1::Sha1;
 
 #[cfg(feature = "sha2")]
