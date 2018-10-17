@@ -4,7 +4,9 @@
 // This file may not be copied, modified, or distributed except
 // according to those terms.
 
-//! Tag bytes
+//! Blot tags.
+//!
+//! Tags are the same found in Objecthash except for [`Tag::Timestamp`].
 
 #[derive(Debug, Clone, Copy)]
 pub enum Tag {

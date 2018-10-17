@@ -4,6 +4,8 @@
 // This file may not be copied, modified, or distributed except
 // according to those terms.
 
+//! Represents a multi-type value able to express any Objecthash combination.
+
 use std::fmt::{self, Display};
 
 use core::Blot;
@@ -28,16 +30,27 @@ impl<T: Multihash> ValueSet<T> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value<T: Multihash> {
+    /// Represents a null value (similar to JSON's null).
     Null,
+    /// Represents a boolean.
     Bool(bool),
+    /// Represents a signed 64-bit integer.
     Integer(i64),
+    /// Represents a 64-bit floating point.
     Float(f64),
+    /// Represents a string.
     String(String),
+    /// Represents a RFC3339 timestamp.
     Timestamp(String),
+    /// Represents a sealed value (i.e. hash resulting of a redacted value).
     Redacted(Seal<T>),
+    /// Represents a raw list of bytes.
     Raw(Vec<u8>),
+    /// Represents a list of values.
     List(Vec<Value<T>>),
+    /// Represents a set of values.
     Set(Vec<Value<T>>),
+    /// Represents an attribute-value dictionary.
     Dict(HashMap<String, Value<T>>),
 }
 

@@ -4,6 +4,10 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
+//! Multihash implementation.
+//!
+//! This module defines the [`Multihash`] trait and the default hashing functions (digesters).
+
 use std::fmt;
 use tag::Tag;
 use uvar::Uvar;

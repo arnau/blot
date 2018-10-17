@@ -4,11 +4,16 @@
 // This file may not be copied, modified, or distributed except according to
 // those terms.
 
+//! Blot core implementation.
+//!
+//! This module defines the [`Blot`] trait and the blot implementation for most Rust primitives.
+
 use multihash::{Harvest, Hash, Multihash};
 use std;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use tag::Tag;
 
+/// Trait for blot implementations.
 pub trait Blot {
     fn blot<T: Multihash>(&self, &T) -> Harvest;
 
