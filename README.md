@@ -68,27 +68,3 @@ blot --sequence=set -a sha3-256 '["7716209dec0a5fc4b58a6d2a89c248c8ac845fc2a42ec
 ## See also
 
 * [blot library](blot-lib)
-
-## TODO
-
-### Blot Notation
-
-```
-// comment
-1                    // Integer
-1.0                  // Float
-"foo"                // String
-["foo"]              // List
-["foo", 1]           // List
-{"foo", "bar"}       // Set
-{"foo": 1}           // Dict
-0x1220fff000         // Raw
-2018-10-11T12:13:14Z // Timestamp
-
-{
-  "foo": [1, 2, 3],
-  "bar": {1, 2, 3},
-  "qux": {"a": 0x1220fff000, "b": 1.0},
-  "baz": {2018-01-01T00:00:00Z,2018-01-01T00:00:01Z, "bar"}
-}
-```

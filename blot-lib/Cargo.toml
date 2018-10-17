@@ -1,10 +1,11 @@
 [package]
 name = "blot-lib"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Arnau Siches <asiches@gmail.com>"]
 
 license = "MIT"
 description = "Blot library implements Objecthash mixed with Multihash"
+readme = "README.md"
 
 homepage = "https://github.com/arnau/blot"
 repository = "https://github.com/arnau/blot"
