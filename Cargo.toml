@@ -1,5 +1,5 @@
 [package]
-name = "blot-cli"
+name = "blot"
 version = "0.1.0"
 authors = ["Arnau Siches <asiches@gmail.com>"]
 
