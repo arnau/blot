@@ -120,6 +120,13 @@ macro_rules! list {
     };
 }
 
+#[macro_export]
+macro_rules! seal {
+    ($input:expr) => {{
+        Seal::from_str($input).map(Value::Redacted)
+    }};
+}
+
 impl<'a, T: Multihash> From<&'a str> for Value<T> {
     fn from(raw: &str) -> Value<T> {
         Value::String(raw.into())
