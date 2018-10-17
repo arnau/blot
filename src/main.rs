@@ -24,13 +24,21 @@ fn main() {
         .author(crate_authors!())
         .setting(AppSettings::ColoredHelp)
         .setting(AppSettings::AllowNegativeNumbers)
-        .about("Print blot checksums")
+        .about(r#"
+blot computes the checksum for the given blob of data following the [Objecthash]
+algorithm adapted to work with [Multihash] hints.
+
+[Objecthash]: https://github.com/benlaurie/objecthash
+[Multihash]: https://github.com/multiformats/multihash
+"#)
         .arg(
             Arg::with_name("input")
                 .help("The data as JSON")
                 .long_help(
                     r#"
-For example, "foo", {"foo": "bar"}, [1, "foo"]
+JSON data to hash. For example, "foo", {"foo": "bar"}, [1, "foo"].
+
+Use a dash ('-') or no argument to read from standard input.
                 "#,
                 )
                 .index(1),
