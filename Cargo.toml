@@ -4,7 +4,8 @@ version = "0.1.0"
 authors = ["Arnau Siches <asiches@gmail.com>"]
 
 license = "MIT"
-description = "Blot command line interface"
+description = "Blot command line interface."
+readme = "README.md"
 
 homepage = "https://github.com/arnau/blot"
 repository = "https://github.com/arnau/blot"
