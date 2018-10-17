@@ -20,7 +20,7 @@ bench = false
 members = ["blot-lib"]
 
 [dependencies]
-blot-lib = { path = "blot-lib" }
+blot-lib = { version = "0.1.0", path = "blot-lib" }
 clap = "2.32.0"
 serde = "1.0"
 serde_json = "1.0"
