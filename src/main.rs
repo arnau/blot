@@ -16,12 +16,14 @@ use blot::multihash::{self, Hash, Multihash};
 use blot::value::{Value, ValueSet};
 use std::io::{self, Read};
 
-use clap::{App, Arg};
+use clap::{App, AppSettings, Arg};
 
 fn main() {
     let matches = App::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
+        .setting(AppSettings::ColoredHelp)
+        .setting(AppSettings::AllowNegativeNumbers)
         .about("Print blot checksums")
         .arg(
             Arg::with_name("input")
