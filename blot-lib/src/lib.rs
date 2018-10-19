@@ -49,12 +49,17 @@
 //! }
 //! ```
 
-extern crate hex;
+#[cfg(feature = "blot_json")]
 #[macro_use]
 extern crate lazy_static;
+#[cfg(feature = "blot_json")]
 extern crate regex;
+#[cfg(feature = "blot_json")]
 extern crate serde;
+#[cfg(feature = "blot_json")]
 extern crate serde_json;
+
+extern crate hex;
 
 #[cfg(feature = "blake2")]
 extern crate blake2 as crypto_blake2;
@@ -66,12 +71,14 @@ extern crate sha2 as crypto_sha2;
 extern crate sha3 as crypto_sha3;
 
 pub mod core;
-pub mod json;
 pub mod multihash;
 pub mod seal;
 pub mod tag;
 pub mod uvar;
 pub mod value;
+
+#[cfg(feature = "blot_json")]
+pub mod json;
 
 pub use core::Blot;
 pub use multihash::Multihash;

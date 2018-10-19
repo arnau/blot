@@ -14,6 +14,7 @@ use seal::Seal;
 use std::collections::HashMap;
 use tag::Tag;
 
+#[cfg(feature = "blot_json")]
 pub mod de;
 
 // TODO: Hack to generate a value with all sequences as sets instead of lists.
