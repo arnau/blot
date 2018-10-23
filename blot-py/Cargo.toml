@@ -1,0 +1,16 @@
+[package]
+name = "blot-py"
+version = "0.1.0"
+authors = ["Arnau Siches <asiches@gmail.com>"]
+
+[lib]
+name = "blot"
+crate-type = ["cdylib"]
+
+[dependencies]
+blot-lib = { path = "../blot-lib" }
+serde_json = "1.0"
+
+[dependencies.pyo3]
+version = "0.4"
+features = ["extension-module"]
