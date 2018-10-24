@@ -7,13 +7,14 @@ extern crate serde_json;
 extern crate blot;
 
 use blot::multihash::{Sha1, Sha2256, Sha2512, Sha3224, Sha3256, Sha3384, Sha3512};
-use blot::value::Value;
+use blot::value::{Value, ValueSet};
 use blot::Blot;
 
 use pyo3::prelude::*;
 
 enum BridgeError {
     InvalidJson,
+    UnknownConfig,
 }
 
 impl From<BridgeError> for pyo3::PyErr {
@@ -22,15 +23,30 @@ impl From<BridgeError> for pyo3::PyErr {
             BridgeError::InvalidJson => {
                 PyErr::new::<pyo3::exc::TypeError, _>("Invalid JSON. Common pitfalls are passing a simple string 'foo' instead of a json string '\"foo\"'.")
             }
+            BridgeError::UnknownConfig => {
+                PyErr::new::<pyo3::exc::TypeError, _>("Unknown configuration")
+            }
+
         }
     }
 }
 
 macro_rules! impl_digest (($name:ident, $type:ident) => {
     #[pyfunction]
-    fn $name(input: String) -> PyResult<String> {
-        let value: Value<$type> = serde_json::from_str(&input)
-            .map_err(|_| BridgeError::InvalidJson)?;
+    fn $name(input: String, seq: Option<&str>) -> PyResult<String> {
+        let value = match seq {
+            Some("set") => {
+                serde_json::from_str::<ValueSet<$type>>(&input)
+                    .map_err(|_| BridgeError::InvalidJson)?
+                    .to_value()
+
+            }
+            Some("list") | None => {
+                serde_json::from_str::<Value<$type>>(&input)
+                    .map_err(|_| BridgeError::InvalidJson)?
+            }
+            _ => Err(BridgeError::UnknownConfig)?
+        };
         let hash = value.digest($type::default());
 
         Ok(hash.to_string())
