@@ -12,18 +12,10 @@ use serde::de::{self, Deserialize, Deserializer, MapAccess, SeqAccess, Visitor};
 use std::collections::HashMap;
 use std::fmt;
 
-use super::{Value, ValueSet};
-
-enum Schema {
-    /// Visitor that transforms all sequences to `Value::List`.
-    SeqAsList,
-
-    /// Visitor that transforms all sequences to `Value::Set`.
-    SeqAsSet,
-}
+use super::Value;
 
 use std::marker::PhantomData;
-struct ValueVisitor<T: Multihash>(Schema, PhantomData<*const T>);
+struct ValueVisitor<T: Multihash>(PhantomData<*const T>);
 
 impl<'de, T: Multihash> Visitor<'de> for ValueVisitor<T> {
     type Value = Value<T>;
@@ -134,10 +126,7 @@ impl<'de, T: Multihash> Visitor<'de> for ValueVisitor<T> {
             vec.push(elem);
         }
 
-        match self.0 {
-            Schema::SeqAsList => Ok(Value::List(vec)),
-            Schema::SeqAsSet => Ok(Value::Set(vec)),
-        }
+        Ok(Value::List(vec))
     }
 
     fn visit_map<V>(self, mut access: V) -> Result<Self::Value, V::Error>
@@ -159,18 +148,7 @@ impl<'de, T: Multihash> Deserialize<'de> for Value<T> {
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_any(ValueVisitor(Schema::SeqAsList, PhantomData))
-    }
-}
-
-impl<'de, T: Multihash> Deserialize<'de> for ValueSet<T> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer
-            .deserialize_any(ValueVisitor(Schema::SeqAsSet, PhantomData))
-            .map(ValueSet)
+        deserializer.deserialize_any(ValueVisitor(PhantomData))
     }
 }
 
@@ -238,8 +216,21 @@ mod tests {
     #[test]
     fn set_value() {
         let input = r#"[1, 2]"#;
-        let expected = r#"Ok(ValueSet(Set([Integer(1), Integer(2)])))"#;
-        let res = serde_json::from_str::<ValueSet<Sha2256>>(input);
+        let expected = r#"Set([Integer(1), Integer(2)])"#;
+        let res = serde_json::from_str::<Value<Sha2256>>(input)
+            .unwrap()
+            .sequences_as_sets();
+
+        assert_eq!(format!("{:?}", res), expected);
+    }
+
+    #[test]
+    fn dict_set_value() {
+        let input = r#"{"foo": ["bar", "baz"]}"#;
+        let expected = r#"Dict({"foo": Set([String("bar"), String("baz")])})"#;
+        let res = serde_json::from_str::<Value<Sha2256>>(input)
+            .unwrap()
+            .sequences_as_sets();
 
         assert_eq!(format!("{:?}", res), expected);
     }

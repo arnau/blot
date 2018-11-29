@@ -13,7 +13,7 @@ extern crate serde_json;
 use ansi_term::Colour::{Black, Fixed};
 use blot::core::Blot;
 use blot::multihash::{self, Hash, Multihash};
-use blot::value::{Value, ValueSet};
+use blot::value::Value;
 use std::io::{self, Read};
 
 use clap::{App, AppSettings, Arg};
@@ -113,13 +113,14 @@ fn handle_stdin(input: &str) -> String {
 }
 
 fn digest_command<D: Multihash>(input: &str, seq_mode: &str, verbose: bool, digester: D) {
-    let value = match seq_mode {
-        "list" => serde_json::from_str::<Value<D>>(&input).expect("Valid json"),
-        "set" => serde_json::from_str::<ValueSet<D>>(&input)
-            .expect("Valid json")
-            .to_value(),
-        _ => unreachable!(),
-    };
+    let value = serde_json::from_str::<Value<D>>(&input)
+        .map(|v| {
+            if seq_mode == "set" {
+                v.sequences_as_sets()
+            } else {
+                v
+            }
+        }).expect("Valid json");
 
     let hash = value.digest(digester);
 

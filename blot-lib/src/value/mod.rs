@@ -17,18 +17,6 @@ use tag::Tag;
 #[cfg(feature = "blot_json")]
 pub mod de;
 
-// TODO: Hack to generate a value with all sequences as sets instead of lists.
-//
-// See `de.rs` for more details.
-#[derive(Clone, Debug, PartialEq)]
-pub struct ValueSet<T: Multihash>(Value<T>);
-
-impl<T: Multihash> ValueSet<T> {
-    pub fn to_value(self) -> Value<T> {
-        self.0
-    }
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value<T: Multihash> {
     /// Represents a null value (similar to JSON's null).
@@ -53,6 +41,20 @@ pub enum Value<T: Multihash> {
     Set(Vec<Value<T>>),
     /// Represents an attribute-value dictionary.
     Dict(HashMap<String, Value<T>>),
+}
+
+impl<T: Multihash> Value<T> {
+    pub fn sequences_as_sets(self) -> Self {
+        match self {
+            Value::List(list) => Value::Set(list),
+            Value::Dict(dict) => Value::Dict(
+                dict.into_iter()
+                    .map(|(k, v)| (k, v.sequences_as_sets()))
+                    .collect(),
+            ),
+            value => value,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -81,6 +83,7 @@ impl<T: Multihash> Blot for Value<T> {
             Value::Raw(raw) => raw.as_slice().blot(digester),
             Value::List(raw) => raw.blot(digester),
             Value::Set(raw) => {
+                println!("in set");
                 let mut list: Vec<Vec<u8>> = raw
                     .iter()
                     .map(|item| {
