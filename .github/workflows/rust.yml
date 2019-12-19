@@ -10,6 +10,8 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+      run: cargo build --verbose --all
+    - name: Run main tests
+      run: cargo test --verbose --all
+    - name: Run common_json golden tests
+      run: cargo test --verbose --package blot-lib --features blot-lib/common_json golden
